@@ -1,0 +1,173 @@
+```{r setup_sparse_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+library(knitr)
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(sf)
+library(lubridate)
+library(ggplot2)
+library(kableExtra)
+
+source('telemetry_tools.R')
+
+knitr.duplicate.label = "allow"
+knitr::opts_chunk$set(fig.path = "images/")
+```
+
+# Comparing Drivers' Live (Sparse) Telemetry
+
+In this chapter, we will start to explore the extent we can compare the live telemtry data traces of different drivers. Note that te data may be quite sparse at times, which might limit what we are able to do.
+
+Where large gaps exist between data samples, we are more likely to require a sensible time model more the stage to try to minimise errors in using a simple, linear interpolator to generate missing data.
+
+## Load Route Data
+
+Get the route in a UTM form:
+
+```{r}
+geojson_filename = "data/finland_2021.geojson"
+geojson_sf = sf::st_read(geojson_filename)
+
+# Use a convenience function tjat loads in the geojson file
+# and then generates a spatial features dataframe with a UTM projection
+stage_route_utm = get_route(geojson_sf, 7)
+
+stage_route_utm
+```
+### Generate Buffered Route
+
+We can also take this opportunity to create a buffered route for filtering the telemetry data:
+
+```{r}
+#Use a convenience function to get buffered route
+buffered_route = get_buffered_route(stage_route_utm, 50, crs=original_crs, utm=FALSE)
+
+leaflet(buffered_route) %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(color = "red", weight = 2)
+```
+
+## Load Driver Data
+
+Load in data for a handful of drivers:
+
+```{r}
+# Path to the telem data
+path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
+```
+
+```{r}
+evans_min_telem = get_min_telem("Evans", "SS7", path)
+evans_min_telem_utm = evans_min_telem %>%
+                        st_transform(crs = st_crs(utm_proj4_string))
+
+# Get the buffer filtered data
+route_telem_evans = get_route_telem(stage_route_utm,
+                                    evans_min_telem,
+                                    evans_min_telem_utm)
+evans_min_telem_utm
+```
+
+We can always preview the data just to check that it is sensible:
+
+```{r}
+library(leaflet)
+
+tmp_route <- evans_min_telem %>% st_coordinates() 
+
+leaflet(tmp_route) %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(color = "purple", weight = 5)
+
+```
+
+Let's get some data for some other drivers:
+
+```{r}
+fourmaux_min_telem = get_min_telem("Fourmaux", "SS7", path)
+
+fourmaux_min_telem_utm = fourmaux_min_telem %>%
+                            st_transform(crs = st_crs(utm_proj4_string))
+
+route_telem_fourmaux = get_route_telem(stage_route_utm,
+                                       fourmaux_min_telem,
+                                       fourmaux_min_telem_utm)
+
+fourmaux_min_telem_utm
+```
+
+```{r}
+breen_min_telem = get_min_telem("Breen", "SS7", path)
+
+breen_min_telem_utm = breen_min_telem %>%
+                            st_transform(crs = st_crs(utm_proj4_string))
+
+route_telem_breen = get_route_telem(stage_route_utm,
+                                       breen_min_telem,
+                                       breen_min_telem_utm)
+
+route_telem_breen
+```
+
+And preview the telemetry sample points for all the drivers we have gathered telemetry data for:
+
+```{r}
+leaflet( )  %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addCircleMarkers(data=route_telem_evans, radius=1, color="blue") %>%
+  addCircleMarkers(data=route_telem_breen, radius=1,color="red") %>%
+  addCircleMarkers(data=route_telem_fourmaux, radius=1, color="black")
+```
+
+## Get Annotated Route Telemetry
+
+The route telemetry annotation includes the distance along the stage route for each telemetry sample:
+
+```{r}
+route_telem_evans_utm = to_utm(route_telem_evans)
+route_telem_evans_utm = route_telem_evans_utm %>% 
+                          get_telem_dists(stage_route_utm)
+#route_telem_evans_utm
+
+
+route_telem_fourmaux_utm = to_utm(route_telem_fourmaux)
+route_telem_fourmaux_utm = route_telem_fourmaux_utm %>% 
+                          get_telem_dists(stage_route_utm)
+route_telem_fourmaux_utm
+```
+
+## Create Driver Estimators
+
+From the annotated data can generate some naive estimators for stage time along route based on distance along route:
+
+```{r}
+
+fourmaux_time_estimator = approxfun(c(0, route_telem_fourmaux_utm$dist),
+                           c(0, route_telem_fourmaux_utm$newdelta_s))
+
+evans_time_estimator = approxfun(c(0, route_telem_evans_utm$dist),
+                           c(0, route_telem_evans_utm$newdelta_s))
+
+```
+
+
+Let's see if a visual comparison reveals anything:
+
+```{r}
+# Sample every 500m
+vals = seq(to=max(c(route_telem_fourmaux_utm$dist,
+                    route_telem_evans_utm$dist)), by=500)
+
+ggplot() + 
+  # Predicted line in pink
+  geom_line(aes(x=vals, y=evans_time_estimator(vals)), size=1, colour='blue') +
+  geom_point(data=route_telem_evans_utm,
+             aes(x=dist, y=newdelta_s), size=1, colour='red') +
+  # Sampled times in black
+  geom_line(aes(x=vals, y=fourmaux_time_estimator(vals)),
+            color='red', size=1) +
+  geom_point(data=route_telem_fourmaux_utm,
+             aes(x=dist, y=newdelta_s), size=1, colour='blue')
+
+```
+

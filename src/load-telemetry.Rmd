@@ -131,7 +131,7 @@ The "live" telemetry includes the road section data. To access the data for just
 To make most effective use of the telemetry data, we want to be able to identify the stage section data as well as the road section data. We can use the official stage route to filter data points from a set of location data that includes road section locations to just those points that lay along a route.
 
 ```{r get_stage_route_data}
-# Path to the route geojson
+# Path to the route telemetry data
 path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
 
 geojson_filename = "data/finland_2021.geojson"
@@ -389,8 +389,8 @@ ggplot() +
   # Predicted line in pink
   geom_line(aes(x=vals, y=time_estimator(vals)), size=3, colour='pink') +
   # Sampled times in black
-  geom_line(data=route_telem_utm, aes(x=dist, y=newdelta_s),
-            linetype='dotted', color='black', size=3)
+  geom_point(data=route_telem_utm, aes(x=dist, y=newdelta_s),
+             color='black', size=1)
 ```
 
 If we have multiple drivers, we can generate an interpolation function for each one. These models can then be used to predict driver times at notional split point locations (for example, every 200 meters or so). In this way, we can try to identify where drivers are gaining or losing time with respect to each other and start to build up stage maps showing how drivers compare with each other along the whole length of the stage.

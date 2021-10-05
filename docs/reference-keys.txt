@@ -11,3 +11,9 @@ telemetry-data-along-a-stage
 finding-points-on-the-route-closest-to-the-telemetry-data-locations
 plotting-locations-a-certain-time-into-the-stage
 interpolating-times-along-the-route
+comparing-drivers-live-sparse-telemetry
+load-route-data
+generate-buffered-route
+load-driver-data
+get-annotated-route-telemetry
+create-driver-estimators
