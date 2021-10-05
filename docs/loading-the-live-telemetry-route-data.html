@@ -705,11 +705,12 @@ Evans
 <p>We note quite a few null columns in there, so let’s clean those out of the dataframe too:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="loading-the-live-telemetry-route-data.html#cb3-1" aria-hidden="true" tabindex="-1"></a>telem_df_min <span class="ot">=</span> telem_df_min <span class="sc">%&gt;%</span></span>
 <span id="cb3-2"><a href="loading-the-live-telemetry-route-data.html#cb3-2" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(accx, accy, altitude, brk, driverid,</span>
-<span id="cb3-3"><a href="loading-the-live-telemetry-route-data.html#cb3-3" aria-hidden="true" tabindex="-1"></a>                            gear, rpm, throttle, track))</span>
-<span id="cb3-4"><a href="loading-the-live-telemetry-route-data.html#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="loading-the-live-telemetry-route-data.html#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">head</span>(telem_df_min), <span class="at">format =</span> <span class="st">&quot;html&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-6"><a href="loading-the-live-telemetry-route-data.html#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb3-7"><a href="loading-the-live-telemetry-route-data.html#cb3-7" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">scroll_box</span>(<span class="at">width =</span> <span class="st">&quot;100%&quot;</span>)</span></code></pre></div>
+<span id="cb3-3"><a href="loading-the-live-telemetry-route-data.html#cb3-3" aria-hidden="true" tabindex="-1"></a>                            gear, rpm, throttle, track)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-4"><a href="loading-the-live-telemetry-route-data.html#cb3-4" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(X_rally_stageid, X_carentryid, X_telemetryID))</span>
+<span id="cb3-5"><a href="loading-the-live-telemetry-route-data.html#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="loading-the-live-telemetry-route-data.html#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">head</span>(telem_df_min), <span class="at">format =</span> <span class="st">&quot;html&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-7"><a href="loading-the-live-telemetry-route-data.html#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-8"><a href="loading-the-live-telemetry-route-data.html#cb3-8" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">scroll_box</span>(<span class="at">width =</span> <span class="st">&quot;100%&quot;</span>)</span></code></pre></div>
 <div style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
@@ -740,15 +741,6 @@ status
 </th>
 <th style="text-align:right;">
 utx
-</th>
-<th style="text-align:left;">
-X_rally_stageid
-</th>
-<th style="text-align:left;">
-X_carentryid
-</th>
-<th style="text-align:left;">
-X_telemetryID
 </th>
 <th style="text-align:left;">
 X_name
@@ -785,15 +777,6 @@ Competing
 1.633164e+12
 </td>
 <td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
-</td>
-<td style="text-align:left;">
 Evans
 </td>
 </tr>
@@ -824,15 +807,6 @@ Competing
 </td>
 <td style="text-align:right;">
 1.633164e+12
-</td>
-<td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
 </td>
 <td style="text-align:left;">
 Evans
@@ -867,15 +841,6 @@ Competing
 1.633164e+12
 </td>
 <td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
-</td>
-<td style="text-align:left;">
 Evans
 </td>
 </tr>
@@ -906,15 +871,6 @@ Competing
 </td>
 <td style="text-align:right;">
 1.633164e+12
-</td>
-<td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
 </td>
 <td style="text-align:left;">
 Evans
@@ -949,15 +905,6 @@ Competing
 1.633164e+12
 </td>
 <td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
-</td>
-<td style="text-align:left;">
 Evans
 </td>
 </tr>
@@ -988,15 +935,6 @@ Competing
 </td>
 <td style="text-align:right;">
 1.633164e+12
-</td>
-<td style="text-align:left;">
-bcc5537d-d28a-40af-ba86-95dad7fb9cd1
-</td>
-<td style="text-align:left;">
-b185c5df-8115-40cf-bd81-566f016f6bf5
-</td>
-<td style="text-align:left;">
-/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
 </td>
 <td style="text-align:left;">
 Evans

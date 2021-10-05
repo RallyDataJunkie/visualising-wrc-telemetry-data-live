@@ -205,7 +205,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## bbox:           xmin: 24.86575 ymin: 61.52393 xmax: 26.20794 ymax: 62.39946
 ## z_range:        zmin: 0 zmax: 148.839
 ## geographic CRS: WGS 84</code></pre>
-<p>Let’s clean it a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:</p>
+<p>Let’s clean the data a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="using-official-route-data.html#cb9-1" aria-hidden="true" tabindex="-1"></a>stage_route  <span class="ot">=</span> geojson_sf[<span class="dv">7</span>,]  <span class="sc">%&gt;%</span> <span class="fu">st_zm</span>()</span>
 <span id="cb9-2"><a href="using-official-route-data.html#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="using-official-route-data.html#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Grab a copy of the original projection</span></span>

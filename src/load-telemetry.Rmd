@@ -64,10 +64,11 @@ kable(head(telem_df_min), format = "html") %>%
 
 We note quite a few null columns in there, so let's clean those out of the dataframe too:
 
-```{r}
+```{r min_telem_data_preview}
 telem_df_min = telem_df_min %>%
                   select(-c(accx, accy, altitude, brk, driverid,
-                            gear, rpm, throttle, track))
+                            gear, rpm, throttle, track)) %>%
+                  select(-c(X_rally_stageid, X_carentryid, X_telemetryID))
 
 kable(head(telem_df_min), format = "html") %>%
   kable_styling() %>%
@@ -84,7 +85,6 @@ To better manage the timing components, we can cast the universal time stamp (in
 latlon_crs = 4326
 
 telem_df_min = telem_df_min %>%
-                  select(-c(X_rally_stageid, X_carentryid, X_telemetryID)) %>%
                   drop_na(lon, lat) %>%
                   st_as_sf(coords = c("lon","lat")) %>%
                   st_set_crs(latlon_crs) %>%
@@ -148,7 +148,7 @@ geojson_sf = sf::st_read(geojson_filename)
 ```
 
 
-Let's clean it a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:
+Let's clean the data a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:
 
 ```{r process_stage_route_data}
 stage_route  = geojson_sf[7,]  %>% st_zm()
