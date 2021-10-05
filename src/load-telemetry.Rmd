@@ -148,7 +148,7 @@ geojson_sf = sf::st_read(geojson_filename)
 ```
 
 
-Let's clean the data a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:
+Let's also clean the data a little by removing the reference to the Z dimension, making a note of original co-ordinate reference scheme, and generating references to the route in both latlong and UTM forms:
 
 ```{r process_stage_route_data}
 stage_route  = geojson_sf[7,]  %>% st_zm()
@@ -331,7 +331,7 @@ first_time_rounded = round_date(first_time, unit="1 minutes")
 c(first_time, first_time_rounded)
 ```
 
-We can then use the rounded first time as a basis for a running stage time estimate:
+We can then use the rounded first time as a basis for a running stage time estimate by subtracting that time from the sample datetimes:
 
 ```{r stage_time_process}
 # Get stage time as a time object...

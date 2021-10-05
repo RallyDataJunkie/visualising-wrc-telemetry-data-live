@@ -195,7 +195,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb18-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(first_time, first_time_rounded)</span></code></pre></div>
 <pre><code>## [1] &quot;2021-10-02 08:37:23 UTC&quot; &quot;2021-10-02 08:37:00 UTC&quot;</code></pre>
-<p>We can then use the rounded first time as a basis for a running stage time estimate:</p>
+<p>We can then use the rounded first time as a basis for a running stage time estimate by subtracting that time from the sample datetimes:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get stage time as a time object...</span></span>
 <span id="cb20-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-2" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_t <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc <span class="sc">-</span> first_time_rounded</span>
 <span id="cb20-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># And in seconds</span></span>
