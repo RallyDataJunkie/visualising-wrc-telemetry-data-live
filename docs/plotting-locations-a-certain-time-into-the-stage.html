@@ -50,6 +50,8 @@
 
 
 
+<script src="libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 <script src="libs/htmlwidgets-1.5.3.9000/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
@@ -60,8 +62,6 @@
 <script src="libs/leaflet-binding-2.0.4.1/leaflet.js"></script>
 <script src="libs/leaflet-providers-1.9.0/leaflet-providers_1.9.0.js"></script>
 <script src="libs/leaflet-providers-plugin-2.0.4.1/leaflet-providers-plugin.js"></script>
-<script src="libs/kePrint-0.0.1/kePrint.js"></script>
-<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 <script data-goatcounter="https://rallydatajunkie.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 
@@ -155,10 +155,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="2.3" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#preparing-the-telemetry-route-data"><i class="fa fa-check"></i><b>2.3</b> Preparing the Telemetry Route Data</a></li>
 <li class="chapter" data-level="2.4" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#visual-preview-of-the-telemetry-route-data"><i class="fa fa-check"></i><b>2.4</b> Visual Preview of the Telemetry Route Data</a></li>
 </ul></li>
-<li class="chapter" data-level="3" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html"><i class="fa fa-check"></i><b>3</b> Accessing Official Route Data</a>
+<li class="chapter" data-level="3" data-path="using-official-route-data.html"><a href="using-official-route-data.html"><i class="fa fa-check"></i><b>3</b> Using Official Route Data</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html#loading-official-stage-route-data"><i class="fa fa-check"></i><b>3.1</b> Loading Official Stage Route Data</a></li>
-<li class="chapter" data-level="3.2" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html#comparing-stage-route-telemetry-and-the-stage-route"><i class="fa fa-check"></i><b>3.2</b> Comparing Stage Route Telemetry and the Stage Route</a></li>
+<li class="chapter" data-level="3.1" data-path="using-official-route-data.html"><a href="using-official-route-data.html#loading-official-stage-route-data"><i class="fa fa-check"></i><b>3.1</b> Loading Official Stage Route Data</a></li>
+<li class="chapter" data-level="3.2" data-path="using-official-route-data.html"><a href="using-official-route-data.html#comparing-stage-route-telemetry-and-the-stage-route"><i class="fa fa-check"></i><b>3.2</b> Comparing Stage Route Telemetry and the Stage Route</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="telemetry-data-along-a-stage.html"><a href="telemetry-data-along-a-stage.html"><i class="fa fa-check"></i><b>4</b> Telemetry Data Along a Stage</a>
 <ul>
@@ -189,45 +189,588 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="plotting-locations-a-certain-time-into-the-stage" class="section level1" number="5">
 <h1><span class="header-section-number">5</span> Plotting Locations a Certain Time Into the Stage</h1>
 <p>If we are missing timing data from the start of the run, <em>and</em> we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the <code>lubridate::round_date()</code> function:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-1" aria-hidden="true" tabindex="-1"></a>first_time <span class="ot">=</span> route_telem_utm[<span class="dv">1</span>,]<span class="sc">$</span>utc</span>
-<span id="cb23-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-3" aria-hidden="true" tabindex="-1"></a>first_time_rounded <span class="ot">=</span> <span class="fu">round_date</span>(first_time, <span class="at">unit=</span><span class="st">&quot;1 minutes&quot;</span>)</span>
-<span id="cb23-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(first_time, first_time_rounded)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-1" aria-hidden="true" tabindex="-1"></a>first_time <span class="ot">=</span> route_telem_utm[<span class="dv">1</span>,]<span class="sc">$</span>utc</span>
+<span id="cb18-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-3" aria-hidden="true" tabindex="-1"></a>first_time_rounded <span class="ot">=</span> <span class="fu">round_date</span>(first_time, <span class="at">unit=</span><span class="st">&quot;1 minutes&quot;</span>)</span>
+<span id="cb18-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(first_time, first_time_rounded)</span></code></pre></div>
 <pre><code>## [1] &quot;2021-10-02 08:37:23 UTC&quot; &quot;2021-10-02 08:37:00 UTC&quot;</code></pre>
 <p>We can then use the rounded first time as a basis for a running stage time estimate:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get stage time as a time object...</span></span>
-<span id="cb25-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-2" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_t <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc <span class="sc">-</span> first_time_rounded</span>
-<span id="cb25-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># And in seconds</span></span>
-<span id="cb25-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-4" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_s <span class="ot">=</span> <span class="fu">as.double</span>(route_telem_utm<span class="sc">$</span>newdelta_t)</span>
-<span id="cb25-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-6"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-6" aria-hidden="true" tabindex="-1"></a>route_telem_utm</span></code></pre></div>
-<pre><code>## Simple feature collection with 83 features and 25 fields
-## geometry type:  POINT
-## dimension:      XY
-## bbox:           xmin: 400117.6 ymin: 6847342 xmax: 403194.8 ymax: 6856758
-## CRS:            +proj=utm +zone=35 +datum=WGS84 +units=m +no_defs
-## # A tibble: 83 x 26
-##        X  accx  accy altitude   brk driverid  gear heading   kms  name   rpm
-##  * &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt; &lt;int&gt; &lt;lgl&gt;    &lt;int&gt;   &lt;int&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt;
-##  1  1870     0     0        0     0 NA           0     144   0.6    33     0
-##  2  1869     0     0        0     0 NA           0     150   0.7    33     0
-##  3  1868     0     0        0     0 NA           0     172   0.8    33     0
-##  4  1867     0     0        0     0 NA           0     220   0.9    33     0
-##  5  1866     0     0        0     0 NA           0     210   1      33     0
-##  6  1865     0     0        0     0 NA           0     208   1.1    33     0
-##  7  1864     0     0        0     0 NA           0     194   1.3    33     0
-##  8  1863     0     0        0     0 NA           0     220   1.5    33     0
-##  9  1862     0     0        0     0 NA           0     176   1.6    33     0
-## 10  1861     0     0        0     0 NA           0     172   1.7    33     0
-## # … with 73 more rows, and 15 more variables: speed &lt;int&gt;, status &lt;chr&gt;,
-## #   throttle &lt;int&gt;, track &lt;lgl&gt;, utx &lt;dbl&gt;, X_rally_stageid &lt;chr&gt;,
-## #   X_carentryid &lt;chr&gt;, X_telemetryID &lt;chr&gt;, X_name &lt;chr&gt;, delta &lt;dbl&gt;,
-## #   utc &lt;dttm&gt;, geometry &lt;POINT [m]&gt;, dist &lt;dbl&gt;, newdelta_t &lt;drtn&gt;,
-## #   newdelta_s &lt;dbl&gt;</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get stage time as a time object...</span></span>
+<span id="cb20-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-2" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_t <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc <span class="sc">-</span> first_time_rounded</span>
+<span id="cb20-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># And in seconds</span></span>
+<span id="cb20-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb20-4" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_s <span class="ot">=</span> <span class="fu">as.double</span>(route_telem_utm<span class="sc">$</span>newdelta_t)</span></code></pre></div>
+<div style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:right;">
+X
+</th>
+<th style="text-align:right;">
+accx
+</th>
+<th style="text-align:right;">
+accy
+</th>
+<th style="text-align:right;">
+altitude
+</th>
+<th style="text-align:right;">
+brk
+</th>
+<th style="text-align:left;">
+driverid
+</th>
+<th style="text-align:right;">
+gear
+</th>
+<th style="text-align:right;">
+heading
+</th>
+<th style="text-align:right;">
+kms
+</th>
+<th style="text-align:right;">
+name
+</th>
+<th style="text-align:right;">
+rpm
+</th>
+<th style="text-align:right;">
+speed
+</th>
+<th style="text-align:left;">
+status
+</th>
+<th style="text-align:right;">
+throttle
+</th>
+<th style="text-align:left;">
+track
+</th>
+<th style="text-align:right;">
+utx
+</th>
+<th style="text-align:left;">
+X_rally_stageid
+</th>
+<th style="text-align:left;">
+X_carentryid
+</th>
+<th style="text-align:left;">
+X_telemetryID
+</th>
+<th style="text-align:left;">
+X_name
+</th>
+<th style="text-align:right;">
+delta
+</th>
+<th style="text-align:left;">
+utc
+</th>
+<th style="text-align:left;">
+geometry
+</th>
+<th style="text-align:right;">
+dist
+</th>
+<th style="text-align:left;">
+newdelta_t
+</th>
+<th style="text-align:right;">
+newdelta_s
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1870
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+144
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+166
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:23
+</td>
+<td style="text-align:left;">
+POINT (401052.2 6856758)
+</td>
+<td style="text-align:right;">
+531.9830
+</td>
+<td style="text-align:left;">
+23.6 secs
+</td>
+<td style="text-align:right;">
+23.6
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1869
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+150
+</td>
+<td style="text-align:right;">
+0.7
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+140
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+3200
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:26
+</td>
+<td style="text-align:left;">
+POINT (401117.6 6856633)
+</td>
+<td style="text-align:right;">
+673.7129
+</td>
+<td style="text-align:left;">
+26.8 secs
+</td>
+<td style="text-align:right;">
+26.8
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1868
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+172
+</td>
+<td style="text-align:right;">
+0.8
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+60
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+6400
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:30
+</td>
+<td style="text-align:left;">
+POINT (401142.7 6856572)
+</td>
+<td style="text-align:right;">
+746.9263
+</td>
+<td style="text-align:left;">
+30.0 secs
+</td>
+<td style="text-align:right;">
+30.0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1867
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+220
+</td>
+<td style="text-align:right;">
+0.9
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+107
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+9600
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:33
+</td>
+<td style="text-align:left;">
+POINT (401093 6856511)
+</td>
+<td style="text-align:right;">
+825.5652
+</td>
+<td style="text-align:left;">
+33.2 secs
+</td>
+<td style="text-align:right;">
+33.2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1866
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+210
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+149
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+12800
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:36
+</td>
+<td style="text-align:left;">
+POINT (401020.1 6856413)
+</td>
+<td style="text-align:right;">
+947.9104
+</td>
+<td style="text-align:left;">
+36.4 secs
+</td>
+<td style="text-align:right;">
+36.4
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1865
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+208
+</td>
+<td style="text-align:right;">
+1.1
+</td>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+159
+</td>
+<td style="text-align:left;">
+Competing
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:left;">
+NA
+</td>
+<td style="text-align:right;">
+1.633164e+12
+</td>
+<td style="text-align:left;">
+bcc5537d-d28a-40af-ba86-95dad7fb9cd1
+</td>
+<td style="text-align:left;">
+b185c5df-8115-40cf-bd81-566f016f6bf5
+</td>
+<td style="text-align:left;">
+/a3f5f3f5-3fb0-42ab-af90-24d91c0493d0/ss07eva_telemetry_js/js
+</td>
+<td style="text-align:left;">
+Evans
+</td>
+<td style="text-align:right;">
+16000
+</td>
+<td style="text-align:left;">
+2021-10-02 08:37:39
+</td>
+<td style="text-align:left;">
+POINT (400938.8 6856299)
+</td>
+<td style="text-align:right;">
+1088.1680
+</td>
+<td style="text-align:left;">
+39.6 secs
+</td>
+<td style="text-align:right;">
+39.6
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 <p>We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(route_telem_utm) <span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>dist, <span class="at">y=</span>newdelta_s))</span></code></pre></div>
-<p><img src="images/unnamed-chunk-10-1.png" width="672" /></p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(route_telem_utm) <span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>dist, <span class="at">y=</span>newdelta_s))</span></code></pre></div>
+<p><img src="images/preview_dist_into_stage-1.png" width="672" /></p>
 <p>If we have data for two or more cars, this would start to provide a basis for comparison. For example, we might be able to see the distance along the stage where their times diverge.</p>
 </div>
             </section>

@@ -19,6 +19,6 @@ To discuss / critique / comment on these analyses, please use the [discussion fo
 
 For a guide to visualising stages, see [*Visualising WRC Rally Stages*](https://rallydatajunkie.com/visualising-rally-stages/).
 
-For a cguide to visualising rally timing and results data, see [*Visualising WRC Rally Results*](https://rallydatajunkie.com/visualising-wrc-rally-results).
+For a guide to visualising rally timing and results data, see [*Visualising WRC Rally Results*](https://rallydatajunkie.com/visualising-wrc-rally-results).
 
 *This report is unofficial and is not associated in any way with the Fédération Internationale de l’Automobile (FIA) or WRC Promoter GmbH.*

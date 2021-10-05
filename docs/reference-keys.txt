@@ -4,7 +4,7 @@ spatial-utilities
 loading-in-the-telemetry-route-data
 preparing-the-telemetry-route-data
 visual-preview-of-the-telemetry-route-data
-accessing-official-route-data
+using-official-route-data
 loading-official-stage-route-data
 comparing-stage-route-telemetry-and-the-stage-route
 telemetry-data-along-a-stage

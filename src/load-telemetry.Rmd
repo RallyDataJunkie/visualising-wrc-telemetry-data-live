@@ -14,7 +14,7 @@ knitr::opts_chunk$set(fig.path = "images/")
 
 # Introducing WRC Telemetry
 
-Whilst a rally is in progress, a limited amount of telemetry is available from the live mapping facility in the form of GPS location data for each vehicle at a low sample rate. This data can be collected and used in real time to give us a means of identifying approximately where on a stage a driver might have lost time compared to another driver. Essentially, we can use the data to create effective split points every 200m or so along a rally stage, rather than every 5km. In addition, we can use the data to identify whether a car has stopped on a road section, and for how long.
+Whilst a rally is in progress, a limited amount of telemetry is available from the live mapping facility. This comes in the form of GPS location data for each vehicle at a low sample rate. This data can be collected and used in real time to give us a means of identifying approximately where on a stage a driver might have lost time compared to another driver. Essentially, we can use the data to create effective split points every 200m or so along a rally stage, rather than every 5km. In addition, we can use the data to identify whether a car has stopped on a road section, and for how long.
 
 More detailed telemetry data can be found on the WRC+ website several hours after a stage has run. This is at a much higher sample rate and includes speed, RPM, throttle and brake data. This allows us to make basic comparisons of drivers' actual performance on a stage at the end of each day of running.
 
@@ -57,7 +57,9 @@ The data is presented in a reverse chronological order, but it is more natural f
 telem_df_min = read.csv(file.path(path, "df_telemetrydata_SS7_Evans.csv") )  %>%
                   map_df(rev)
 
-head(telem_df_min)
+kable(head(telem_df_min), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 We note quite a few null columns in there, so let's clean those out of the dataframe too:
@@ -67,7 +69,9 @@ telem_df_min = telem_df_min %>%
                   select(-c(accx, accy, altitude, brk, driverid,
                             gear, rpm, throttle, track))
 
-head(telem_df_min)
+kable(head(telem_df_min), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 ## Preparing the Telemetry Route Data
@@ -90,7 +94,9 @@ telem_df_min = telem_df_min %>%
                                           origin = "1970-01-01",
                                           tz = "Europe/Helsinki")) 
 
-head(telem_df_min)
+kable(head(telem_df_min), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 For convenience, let's also generate a UTM projection of this spatial features dataframe:
@@ -120,7 +126,7 @@ The "live" telemetry includes the road section data. To access the data for just
 - based on time: if we know the stage start time for the driver, and their stage time, we can filter the data based on timestamps;
 - based on location: if we have route data for the stage, we can create a buffered area around the stage route, and then filter telemetry data based on points that lay inside that buffered area.
 
-# Accessing Official Route Data
+# Using Official Route Data
 
 To make most effective use of the telemetry data, we want to be able to identify the stage section data as well as the road section data. We can use the official stage route to filter data points from a set of location data that includes road section locations to just those points that lay along a route.
 
@@ -203,8 +209,14 @@ To simplify distance calculations, where we are likely to want to work in units 
 # Also generate a UTM projection of the minimal route telemetry
 route_telem_utm = st_transform(route_telem,
                                crs = st_crs(utm_proj4_string))
+```
 
-route_telem_utm
+Let's see how it looks:
+
+```{r echo=FALSE}
+kable(head(route_telem), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 We can now find the  intersection of the buffered stage route and the original telemetry spatial features dataframe. The `st_intersects()` function prefers a UTM projection, so let's use that:
@@ -252,7 +264,7 @@ One thing to note about the `rgeos` package is that it works with `Spatial` (`sp
 
 If we also use UTM co-ordinates, the distance along the route is given in meters:
 
-```{r}
+```{r find_points_on_route}
 min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
                       crs=st_crs(route_telem_utm))
 
@@ -271,14 +283,21 @@ zz = as.data.frame(dist_points)
 
 # Add the distance into stage for each point
 route_telem_utm$dist =  dist_points
-route_telem_utm
+```
+
+How does the data look now?
+
+```{r echo=FALSE}
+kable(head(route_telem_utm), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 We might thinks of each of these points as notional split points at particular distances along the route.
 
 it is also worth noting that the `rgeos::gInterpolate()` function complements `rgeos::gProject()` by providing a function that can also return a location a specified distance along a line:
 
-```{r warning=FALSE}
+```{r find_point_5km_in, warning=FALSE}
 sample_point_sp_utm = rgeos::gInterpolate(as(stage_route_utm, "Spatial"),
                                           5000, # Distance along route in meters
                                           normalized = FALSE)
@@ -293,7 +312,7 @@ sample_point_sf = sample_point_sf_utm %>% st_transform(crs = st_crs(latlon_crs))
 
 Let's see that point, 5km along the route:
 
-```{r}
+```{r preview_5km_in}
 leaflet() %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addPolylines(data=stage_route, color = "black", weight = 3) %>%
@@ -304,7 +323,7 @@ leaflet() %>%
 
 If we are missing timing data from the start of the run, *and* we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the `lubridate::round_date()` function:
 
-```{r}
+```{r estimate_stage_start_time}
 first_time = route_telem_utm[1,]$utc
 
 first_time_rounded = round_date(first_time, unit="1 minutes")
@@ -314,18 +333,22 @@ c(first_time, first_time_rounded)
 
 We can then use the rounded first time as a basis for a running stage time estimate:
 
-```{r}
+```{r stage_time_process}
 # Get stage time as a time object...
 route_telem_utm$newdelta_t = route_telem_utm$utc - first_time_rounded
 # And in seconds
 route_telem_utm$newdelta_s = as.double(route_telem_utm$newdelta_t)
+```
 
-route_telem_utm
+```{r echo=FALSE}
+kable(head(route_telem_utm), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
 ```
 
 We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.
 
-```{r}
+```{r preview_dist_into_stage}
 ggplot(route_telem_utm) +geom_line(aes(x=dist, y=newdelta_s))
 ```
 
@@ -341,7 +364,7 @@ In order to compare times at the same location, as we do with official split tim
 
 One way of doing this is to generate an estimator function based on the time and distance data in the telemetry data frame.
 
-```{r}
+```{r estimate_stage_time}
 # Estimate the time based on the distance into the route
 # Add in an origin time at the stage of the stage
 # If necessary, we could also add a crude acceleration effect
@@ -358,7 +381,7 @@ We can then use these estimator functions to estimate times at particular distan
 
 For example, let's create notional split points every 500 meters along the route, plotting both the predicted times and the actual times:
 
-```{r}
+```{r preview_stage_timedist_estimate}
 # Sample every 500m
 vals = seq(to=max(route_telem_utm$dist), by=500)
 
