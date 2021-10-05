@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>5 Plotting Locations a Certain Time Into the Stage | Visualising WRC Telemetry Data</title>
+  <meta name="description" content="Analysing WRC telemetry data." />
+  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="5 Plotting Locations a Certain Time Into the Stage | Visualising WRC Telemetry Data" />
+  <meta property="og:type" content="book" />
+  
+  
+  <meta property="og:description" content="Analysing WRC telemetry data." />
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="5 Plotting Locations a Certain Time Into the Stage | Visualising WRC Telemetry Data" />
+  
+  <meta name="twitter:description" content="Analysing WRC telemetry data." />
+  
+
+<meta name="author" content="Tony Hirst" />
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="telemetry-data-along-a-stage.html"/>
+<link rel="next" href="interpolating-times-along-the-route.html"/>
+<script src="libs/header-attrs-2.7/header-attrs.js"></script>
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<script src="libs/htmlwidgets-1.5.3.9000/htmlwidgets.js"></script>
+<link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
+<script src="libs/leaflet-1.3.1/leaflet.js"></script>
+<link href="libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
+<script src="libs/proj4-2.6.2/proj4.min.js"></script>
+<script src="libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link href="libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
+<script src="libs/leaflet-binding-2.0.4.1/leaflet.js"></script>
+<script src="libs/leaflet-providers-1.9.0/leaflet-providers_1.9.0.js"></script>
+<script src="libs/leaflet-providers-plugin-2.0.4.1/leaflet-providers-plugin.js"></script>
+<script src="libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<script data-goatcounter="https://rallydatajunkie.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./"><strong>Visualing WRC Telemetry</strong></a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="1" data-path="introducing-wrc-telemetry.html"><a href="introducing-wrc-telemetry.html"><i class="fa fa-check"></i><b>1</b> Introducing WRC Telemetry</a></li>
+<li class="chapter" data-level="2" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html"><i class="fa fa-check"></i><b>2</b> Loading the Live Telemetry Route Data</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#spatial-utilities"><i class="fa fa-check"></i><b>2.1</b> Spatial Utilities</a></li>
+<li class="chapter" data-level="2.2" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#loading-in-the-telemetry-route-data"><i class="fa fa-check"></i><b>2.2</b> Loading in the Telemetry Route Data</a></li>
+<li class="chapter" data-level="2.3" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#preparing-the-telemetry-route-data"><i class="fa fa-check"></i><b>2.3</b> Preparing the Telemetry Route Data</a></li>
+<li class="chapter" data-level="2.4" data-path="loading-the-live-telemetry-route-data.html"><a href="loading-the-live-telemetry-route-data.html#visual-preview-of-the-telemetry-route-data"><i class="fa fa-check"></i><b>2.4</b> Visual Preview of the Telemetry Route Data</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html"><i class="fa fa-check"></i><b>3</b> Accessing Official Route Data</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html#loading-official-stage-route-data"><i class="fa fa-check"></i><b>3.1</b> Loading Official Stage Route Data</a></li>
+<li class="chapter" data-level="3.2" data-path="accessing-official-route-data.html"><a href="accessing-official-route-data.html#comparing-stage-route-telemetry-and-the-stage-route"><i class="fa fa-check"></i><b>3.2</b> Comparing Stage Route Telemetry and the Stage Route</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="telemetry-data-along-a-stage.html"><a href="telemetry-data-along-a-stage.html"><i class="fa fa-check"></i><b>4</b> Telemetry Data Along a Stage</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="telemetry-data-along-a-stage.html"><a href="telemetry-data-along-a-stage.html#finding-points-on-the-route-closest-to-the-telemetry-data-locations"><i class="fa fa-check"></i><b>4.1</b> Finding Points on the Route Closest to the Telemetry Data Locations</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="plotting-locations-a-certain-time-into-the-stage.html"><a href="plotting-locations-a-certain-time-into-the-stage.html"><i class="fa fa-check"></i><b>5</b> Plotting Locations a Certain Time Into the Stage</a></li>
+<li class="chapter" data-level="6" data-path="interpolating-times-along-the-route.html"><a href="interpolating-times-along-the-route.html"><i class="fa fa-check"></i><b>6</b> Interpolating Times Along the Route</a></li>
+<li class="divider"></li>
+<li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="plotting-locations-a-certain-time-into-the-stage" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Plotting Locations a Certain Time Into the Stage</h1>
+<p>If we are missing timing data from the start of the run, <em>and</em> we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the <code>lubridate::round_date()</code> function:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-1" aria-hidden="true" tabindex="-1"></a>first_time <span class="ot">=</span> route_telem_utm[<span class="dv">1</span>,]<span class="sc">$</span>utc</span>
+<span id="cb23-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-3" aria-hidden="true" tabindex="-1"></a>first_time_rounded <span class="ot">=</span> <span class="fu">round_date</span>(first_time, <span class="at">unit=</span><span class="st">&quot;1 minutes&quot;</span>)</span>
+<span id="cb23-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(first_time, first_time_rounded)</span></code></pre></div>
+<pre><code>## [1] &quot;2021-10-02 08:37:23 UTC&quot; &quot;2021-10-02 08:37:00 UTC&quot;</code></pre>
+<p>We can then use the rounded first time as a basis for a running stage time estimate:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get stage time as a time object...</span></span>
+<span id="cb25-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-2" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_t <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc <span class="sc">-</span> first_time_rounded</span>
+<span id="cb25-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># And in seconds</span></span>
+<span id="cb25-4"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-4" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>newdelta_s <span class="ot">=</span> <span class="fu">as.double</span>(route_telem_utm<span class="sc">$</span>newdelta_t)</span>
+<span id="cb25-5"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb25-6" aria-hidden="true" tabindex="-1"></a>route_telem_utm</span></code></pre></div>
+<pre><code>## Simple feature collection with 83 features and 25 fields
+## geometry type:  POINT
+## dimension:      XY
+## bbox:           xmin: 400117.6 ymin: 6847342 xmax: 403194.8 ymax: 6856758
+## CRS:            +proj=utm +zone=35 +datum=WGS84 +units=m +no_defs
+## # A tibble: 83 x 26
+##        X  accx  accy altitude   brk driverid  gear heading   kms  name   rpm
+##  * &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt; &lt;int&gt; &lt;lgl&gt;    &lt;int&gt;   &lt;int&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt;
+##  1  1870     0     0        0     0 NA           0     144   0.6    33     0
+##  2  1869     0     0        0     0 NA           0     150   0.7    33     0
+##  3  1868     0     0        0     0 NA           0     172   0.8    33     0
+##  4  1867     0     0        0     0 NA           0     220   0.9    33     0
+##  5  1866     0     0        0     0 NA           0     210   1      33     0
+##  6  1865     0     0        0     0 NA           0     208   1.1    33     0
+##  7  1864     0     0        0     0 NA           0     194   1.3    33     0
+##  8  1863     0     0        0     0 NA           0     220   1.5    33     0
+##  9  1862     0     0        0     0 NA           0     176   1.6    33     0
+## 10  1861     0     0        0     0 NA           0     172   1.7    33     0
+## # … with 73 more rows, and 15 more variables: speed &lt;int&gt;, status &lt;chr&gt;,
+## #   throttle &lt;int&gt;, track &lt;lgl&gt;, utx &lt;dbl&gt;, X_rally_stageid &lt;chr&gt;,
+## #   X_carentryid &lt;chr&gt;, X_telemetryID &lt;chr&gt;, X_name &lt;chr&gt;, delta &lt;dbl&gt;,
+## #   utc &lt;dttm&gt;, geometry &lt;POINT [m]&gt;, dist &lt;dbl&gt;, newdelta_t &lt;drtn&gt;,
+## #   newdelta_s &lt;dbl&gt;</code></pre>
+<p>We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(route_telem_utm) <span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>dist, <span class="at">y=</span>newdelta_s))</span></code></pre></div>
+<p><img src="images/unnamed-chunk-10-1.png" width="672" /></p>
+<p>If we have data for two or more cars, this would start to provide a basis for comparison. For example, we might be able to see the distance along the stage where their times diverge.</p>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="telemetry-data-along-a-stage.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="interpolating-times-along-the-route.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": false,
+"twitter": false,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": {}
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": null,
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "section",
+"scroll_highlight": true
+},
+"toc_depth": 3,
+"toolbar": {
+"position": "fixed"
+},
+"search": true,
+"info": true
+});
+});
+</script>
+
+</body>
+
+</html>

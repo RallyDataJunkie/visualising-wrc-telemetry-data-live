@@ -1,0 +1,374 @@
+```{r setup_load_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+library(knitr)
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(sf)
+library(lubridate)
+library(ggplot2)
+library(kableExtra)
+
+knitr.duplicate.label = "allow"
+knitr::opts_chunk$set(fig.path = "images/")
+```
+
+# Introducing WRC Telemetry
+
+Whilst a rally is in progress, a limited amount of telemetry is available from the live mapping facility in the form of GPS location data for each vehicle at a low sample rate. This data can be collected and used in real time to give us a means of identifying approximately where on a stage a driver might have lost time compared to another driver. Essentially, we can use the data to create effective split points every 200m or so along a rally stage, rather than every 5km. In addition, we can use the data to identify whether a car has stopped on a road section, and for how long.
+
+More detailed telemetry data can be found on the WRC+ website several hours after a stage has run. This is at a much higher sample rate and includes speed, RPM, throttle and brake data. This allows us to make basic comparisons of drivers' actual performance on a stage at the end of each day of running.
+
+
+# Loading the Live Telemetry Route Data
+
+The examples provided utilise data that has already been downloaded.
+
+## Spatial Utilities
+
+The GPS data is provided as a set of latitude and longitude co-ordinates. For various forms of analysis, such as calculating and comparing distance in meters, we need to map from the latitude/longitude co-ordinate system to a projection such as UTM (Universal transverse Mercator).
+
+The following function identifies the correct UTM region for managing the conversion.
+
+```{r load_spatial_libs}
+library(sf)
+
+lonlat2UTM_hemisphere <- function(lonlat) {
+    ifelse(lonlat[1] > 0, "north", "south")
+}
+
+lonlat2UTMzone = function(lonlat) {
+  utm = (floor((lonlat[1] + 180) / 6) %% 60) + 1
+  if(lonlat[2] > 0) {
+    utm + 32600
+  } else{
+    utm + 32700
+  }
+}
+
+```
+
+## Loading in the Telemetry Route Data
+
+The data is available in the form of a simple CSV data file.
+
+The data is presented in a reverse chronological order, but it is more natural for us to present it in chronological (increasing time) order.
+
+```{r load_telem_demo}
+telem_df_min = read.csv(file.path(path, "df_telemetrydata_SS7_Evans.csv") )  %>%
+                  map_df(rev)
+
+head(telem_df_min)
+```
+
+We note quite a few null columns in there, so let's clean those out of the dataframe too:
+
+```{r}
+telem_df_min = telem_df_min %>%
+                  select(-c(accx, accy, altitude, brk, driverid,
+                            gear, rpm, throttle, track))
+
+head(telem_df_min)
+```
+
+## Preparing the Telemetry Route Data
+
+We can perform a small amount of cleaning on the data to remove any rows where there are missing latitude or longitude values before before generating a spatial features data object with a column containing the geometry information with the lat/long co-ordinate reference system (CRS) specified.
+
+To better manage the timing components, we can cast the universal time stamp (in milliseconds) to a datetime stamp, ensuring we also set the correct time zone along the way. A `delta_s` columns is also used to capture the time difference (in seconds) between sample points.
+
+```{r telem_demo_clean, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE }
+latlon_crs = 4326
+
+telem_df_min = telem_df_min %>%
+                  select(-c(X_rally_stageid, X_carentryid, X_telemetryID)) %>%
+                  drop_na(lon, lat) %>%
+                  st_as_sf(coords = c("lon","lat")) %>%
+                  st_set_crs(latlon_crs) %>%
+                  # Set datetime and delta_s
+                  mutate(delta_s=cumsum(c(0,diff(utx)))/1000)%>%
+                  mutate(utc = as.POSIXct(utx/1000,
+                                          origin = "1970-01-01",
+                                          tz = "Europe/Helsinki")) 
+
+head(telem_df_min)
+```
+
+For convenience, let's also generate a UTM projection of this spatial features dataframe:
+
+```{r}
+# Generate a UTM projection of the route telemetry
+telem_df_min_utm = telem_df_min %>%
+                      st_transform(crs = st_crs(utm_proj4_string))
+```
+
+
+## Visual Preview of the Telemetry Route Data
+
+We can preview the route on an interactive map using the `leaflet` package, casting the route data to a set of paired co-ordinates:
+
+```{r preview_telem_test_map}
+library(leaflet)
+
+tmp_route <- telem_df_min %>% st_coordinates() 
+
+leaflet(tmp_route) %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(color = "red", weight = 5)
+```
+The "live" telemetry includes the road section data. To access the data for just the stage we need to filter it somehow. There are two ways we might do this:
+
+- based on time: if we know the stage start time for the driver, and their stage time, we can filter the data based on timestamps;
+- based on location: if we have route data for the stage, we can create a buffered area around the stage route, and then filter telemetry data based on points that lay inside that buffered area.
+
+# Accessing Official Route Data
+
+To make most effective use of the telemetry data, we want to be able to identify the stage section data as well as the road section data. We can use the official stage route to filter data points from a set of location data that includes road section locations to just those points that lay along a route.
+
+```{r get_stage_route_data}
+# Path to the route geojson
+path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
+
+geojson_filename = "data/finland_2021.geojson"
+```
+
+*For more information on analysing rally stage routes, see [__Visualising WRC Rally Stages With rayshader and R__](https://rallydatajunkie.com/visualising-rally-stages).*
+
+## Loading Official Stage Route Data
+
+Let's load in some route data:
+
+```{r}
+geojson_sf = sf::st_read(geojson_filename)
+```
+
+
+Let's clean it a little by removing reference to the Z dimension, capture the projection, and generate references to the route in both latlong and UTM forms:
+
+```{r process_stage_route_data}
+stage_route  = geojson_sf[7,]  %>% st_zm()
+
+# Grab a copy of the original projection
+original_crs = st_crs(stage_route)
+
+# Find the UTM zone for a sample a point on the route
+crs_zone = lonlat2UTMzone(c(st_coordinates(stage_route)[1,1],
+                            st_coordinates(stage_route)[1,2]))
+
+# Create the projection string
+utm_proj4_string = st_crs(crs_zone)$proj4string
+#"+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs"
+# units in meters e.g. https://epsg.io/32632
+
+# Transform the route projection
+stage_route_utm = st_transform(stage_route,
+                               crs = st_crs(utm_proj4_string))
+```
+
+## Comparing Stage Route Telemetry and the Stage Route
+
+Let's plot the telemetry data on a map, and then compare it to the stage route data:
+
+```{r plot_stage_route_and_telem}
+leaflet() %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(data=tmp_route, color = "red", weight = 5) %>%
+  addPolylines(data=stage_route, color = "black", weight = 3)
+```
+
+
+If you look closely at the map, you will see that the stage route trace (in black) closely follows the road indicated on the map, but the lower resolution route telemetry data (the red line) only falls at occasional points along it; a straight line connects the sample points.
+
+# Telemetry Data Along a Stage
+
+We can filter the telemetry data to just the data points that lay on the route by creating a buffered area around the route and then "cropping" the telemetry route data to just the data that fulls within that region.
+
+Let's create a buffered area 100m wide around the route:
+
+```{r create_buffered_stage_route}
+# Generate buffered routes in UTM and longlat projections
+buffer_margin_100m = units::set_units(100, m)
+
+buffered_route_utm = st_buffer(stage_route_utm, buffer_margin_100m)
+buffered_route = st_transform(buffered_route_utm, original_crs)
+
+leaflet(buffered_route) %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(color = "red", weight = 2)
+```
+
+
+To simplify distance calculations, where we are likely to want to work in units of meters, generate a UTM projection of the route telemetry data:
+
+```{r route_telem_intersect_utm, message=FALSE}
+# Also generate a UTM projection of the minimal route telemetry
+route_telem_utm = st_transform(route_telem,
+                               crs = st_crs(utm_proj4_string))
+
+route_telem_utm
+```
+
+We can now find the  intersection of the buffered stage route and the original telemetry spatial features dataframe. The `st_intersects()` function prefers a UTM projection, so let's use that:
+
+```{r intersect_route_and_telem}
+#Find the intersecting points
+route_telem_intersect = st_intersects(buffered_route_utm, telem_df_min_utm)
+
+# And then filter on those points
+# Also nullify the Z dimension
+route_telem = telem_df_min[route_telem_intersect[[1]],]  %>% st_zm()
+```
+
+Let's preview the first few rows of that data:
+
+```{r echo=FALSE}
+kable(head(route_telem), format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
+```
+
+If we assume that the `kms` column is the distance into stage, we see that it appears that we are missing data from the start of the run? The datetime would also suggest that we may be missing some samples from the start of the run, because start times typically start precisely on the minute.
+
+But at least we have something! If we now plot the resulting telemetry data points, we see have limited our selection to just the sample points that fall within the buffered stage route area:
+
+```{r plot_route_telem_intersect}
+leaflet(route_telem )  %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addCircleMarkers()
+```
+
+## Finding Points on the Route Closest to the Telemetry Data Locations
+
+Locating telemetry data along a stage us useful, but how we might start to use that to make comparisons between drivers?
+
+If we know the time of day when a drive starts a stage, we can find the difference between the telemetry sample time and the start time to get an elapsed duration *into* the stage. But even so: how do we know *where* in a stage a car is?
+
+When split times are recorded, we know exactly where the car was at that point in time: it was at the split point location. So how might we determine where a car is on a route that acts as a fair basis for comparison.
+
+One way is to create notional split points at known distances along the actual route. The `rgeos::gProject()` function finds the points along the stage route that are nearest to the telemetry route points. Specifically, the function returns the distance along the route of the point on the route nearest to a provided location.
+
+This means that we can provide a set of points, such as a telemetry sample location points, and get the distance of a point along the route that is closest to the sample point location.
+
+One thing to note about the `rgeos` package is that it works with `Spatial` (`sp`) objects rather than *spatial features* (`sf`) objects, we so need to manage a conversion from one object type to the other in order to call the `:gProject()` function.
+
+If we also use UTM co-ordinates, the distance along the route is given in meters:
+
+```{r}
+min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
+                      crs=st_crs(route_telem_utm))
+
+# Handle the conversion from sf to sp objects
+# Generate a list of points from a multipoint
+# Via: https://github.com/r-spatial/sf/issues/114
+min_pois_points_utm = st_cast(x = min_pois_utm, to = "POINT")
+min_pois_points_utm_sp = as(min_pois_points_utm, 'Spatial')
+
+# Find the distance along the route of the point on the route
+# nearest to each telemetry sample
+dist_points = rgeos::gProject(as(stage_route_utm, "Spatial"),
+                min_pois_points_utm_sp, normalized = FALSE)
+
+zz = as.data.frame(dist_points)
+
+# Add the distance into stage for each point
+route_telem_utm$dist =  dist_points
+route_telem_utm
+```
+
+We might thinks of each of these points as notional split points at particular distances along the route.
+
+it is also worth noting that the `rgeos::gInterpolate()` function complements `rgeos::gProject()` by providing a function that can also return a location a specified distance along a line:
+
+```{r warning=FALSE}
+sample_point_sp_utm = rgeos::gInterpolate(as(stage_route_utm, "Spatial"),
+                                          5000, # Distance along route in meters
+                                          normalized = FALSE)
+
+# We can convert back from an sp to an sf object:
+sample_point_sf_utm = st_as_sf(sample_point_sp_utm)
+
+# And also convert back to a latlong reference system
+sample_point_sf = sample_point_sf_utm %>% st_transform(crs = st_crs(latlon_crs))
+```
+
+
+Let's see that point, 5km along the route:
+
+```{r}
+leaflet() %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines(data=stage_route, color = "black", weight = 3) %>%
+  addMarkers(data=sample_point_sf)
+```
+
+# Plotting Locations a Certain Time Into the Stage
+
+If we are missing timing data from the start of the run, *and* we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the `lubridate::round_date()` function:
+
+```{r}
+first_time = route_telem_utm[1,]$utc
+
+first_time_rounded = round_date(first_time, unit="1 minutes")
+
+c(first_time, first_time_rounded)
+```
+
+We can then use the rounded first time as a basis for a running stage time estimate:
+
+```{r}
+# Get stage time as a time object...
+route_telem_utm$newdelta_t = route_telem_utm$utc - first_time_rounded
+# And in seconds
+route_telem_utm$newdelta_s = as.double(route_telem_utm$newdelta_t)
+
+route_telem_utm
+```
+
+We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.
+
+```{r}
+ggplot(route_telem_utm) +geom_line(aes(x=dist, y=newdelta_s))
+```
+
+If we have data for two or more cars, this would start to provide a basis for comparison. For example, we might be able to see the distance along the stage where their times diverge.
+
+# Interpolating Times Along the Route
+
+Generating distances along the route, or "ghost" split points, gives us some basis for being able to make comparisons between cars. But we are still faced with a very particular problem: it's unlikely that any two cars will generate telemetry sample points at the same location, which is to say, the same distance along the line.
+
+In order to compare times at the same location, as we do with official split times, we need to generate some sort of model that lets us interpolate times along the route. This would then allow us compare times, albeit estimated ones, at the same location.
+
+*For more accuracy, this could should be done based on a speed model constructed from an analysis of route curvature.*
+
+One way of doing this is to generate an estimator function based on the time and distance data in the telemetry data frame.
+
+```{r}
+# Estimate the time based on the distance into the route
+# Add in an origin time at the stage of the stage
+# If necessary, we could also add a crude acceleration effect
+# model at the start of the stage
+time_estimator = approxfun(c(0, route_telem_utm$dist),
+                           c(0, route_telem_utm$newdelta_s))
+
+# Estimate the distance based on the time into the route
+distance_estimator = approxfun(route_telem_utm$newdelta_s,
+                              route_telem_utm$dist)
+```
+
+We can then use these estimator functions to estimate times at particular distances along the route, and *vice versa*.
+
+For example, let's create notional split points every 500 meters along the route, plotting both the predicted times and the actual times:
+
+```{r}
+# Sample every 500m
+vals = seq(to=max(route_telem_utm$dist), by=500)
+
+ggplot() + 
+  # Predicted line in pink
+  geom_line(aes(x=vals, y=time_estimator(vals)), size=3, colour='pink') +
+  # Sampled times in black
+  geom_line(data=route_telem_utm, aes(x=dist, y=newdelta_s),
+            linetype='dotted', color='black', size=3)
+```
+
+If we have multiple drivers, we can generate an interpolation function for each one. These models can then be used to predict driver times at notional split point locations (for example, every 200 meters or so). In this way, we can try to identify where drivers are gaining or losing time with respect to each other and start to build up stage maps showing how drivers compare with each other along the whole length of the stage.
+

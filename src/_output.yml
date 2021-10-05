@@ -1,0 +1,31 @@
+bookdown::gitbook:
+  includes:
+    in_header: [goatcounter.html]
+  config:
+    toc_depth: 3
+    toc:
+      collapse: section
+      scroll_highlight: yes
+      before: |
+        <li><a href="./"><strong>Visualing WRC Telemetry</strong></a></li>
+      after: |
+        <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
+    toolbar:
+      position: fixed
+    edit : null
+    download: null
+    search: yes
+    fontsettings:
+      theme: white
+      family: sans
+      size: 2
+    sharing:
+      facebook: no
+      github: no
+      twitter: no
+      linkedin: no
+      weibo: no
+      instapaper: no
+      vk: no
+      all: []
+    info: yes

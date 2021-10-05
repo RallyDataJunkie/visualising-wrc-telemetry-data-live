@@ -1,0 +1,24 @@
+---
+title: "Visualising WRC Telemetry Data"
+subtitle: "A RallyDataJunkie Recipe Book"
+author: "Tony Hirst"
+description: "Analysing WRC telemetry data."
+knit: "bookdown::render_book"
+site: bookdown::bookdown_site
+date: "Last generated on `r format(Sys.time(), '%d %B, %Y')`"
+always_allow_html: yes
+new_session: no
+---
+# Preface {-}
+
+A recipe guide to visualising WRC car telemetry data using the *R* programming language.
+
+Based on analysis of telemetry data files downloaded from the WRC website.
+
+To discuss / critique / comment on these analyses, please use the [discussion forum](https://github.com/RallyDataJunkie/rallydatajunkie.github.io/discussions).
+
+For a guide to visualising stages, see [*Visualising WRC Rally Stages*](https://rallydatajunkie.com/visualising-rally-stages/).
+
+For a cguide to visualising rally timing and results data, see [*Visualising WRC Rally Results*](https://rallydatajunkie.com/visualising-wrc-rally-results).
+
+*This report is unofficial and is not associated in any way with the Fédération Internationale de l’Automobile (FIA) or WRC Promoter GmbH.*
