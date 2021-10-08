@@ -24,5 +24,5 @@ create-driver-estimators
 creating-a-common-false-time-origin
 visual-driver-comparison
 finding-the-time-to-complete-a-particular-stretch
-estimatating-time-deltas-between-drivers-over-small-sections
+estimating-time-deltas-between-drivers-over-small-sections
 interpolation-using-a-speed-model

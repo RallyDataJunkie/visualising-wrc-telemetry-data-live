@@ -31,7 +31,7 @@
   
   
 <link rel="prev" href="comparing-drivers-live-sparse-telemetry.html"/>
-<link rel="next" href="estimatating-time-deltas-between-drivers-over-small-sections.html"/>
+<link rel="next" href="estimating-time-deltas-between-drivers-over-small-sections.html"/>
 <script src="libs/header-attrs-2.7/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -187,7 +187,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.6" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#visual-driver-comparison"><i class="fa fa-check"></i><b>7.6</b> Visual Driver Comparison</a></li>
 </ul></li>
 <li class="chapter" data-level="8" data-path="finding-the-time-to-complete-a-particular-stretch.html"><a href="finding-the-time-to-complete-a-particular-stretch.html"><i class="fa fa-check"></i><b>8</b> Finding the Time to Complete a Particular Stretch</a></li>
-<li class="chapter" data-level="9" data-path="estimatating-time-deltas-between-drivers-over-small-sections.html"><a href="estimatating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimatating Time Deltas Between Drivers Over Small Sections</a></li>
+<li class="chapter" data-level="9" data-path="estimating-time-deltas-between-drivers-over-small-sections.html"><a href="estimating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimating Time Deltas Between Drivers Over Small Sections</a></li>
 <li class="chapter" data-level="10" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Speed Model</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
@@ -212,7 +212,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="finding-the-time-to-complete-a-particular-stretch" class="section level1" number="8">
 <h1><span class="header-section-number">8</span> Finding the Time to Complete a Particular Stretch</h1>
 <p>In order to compare the time it takes two or more drivers to cover the same stretch of a stage route, we need to find out how long it takes each of them to cover that distance.</p>
-<p>The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it taks the driver to complete that section.</p>
+<p>The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it takes the driver to complete that section.</p>
 <div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Return time to travel along a segment. </span></span>
 <span id="cb55-2"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Units relate to whether the distances are in eg m or km</span></span>
 <span id="cb55-3"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-3" aria-hidden="true" tabindex="-1"></a>segmentTimeDelta <span class="ot">=</span> <span class="cf">function</span>(driver_estimator, cumdist,</span>
@@ -250,7 +250,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
         </div>
       </div>
 <a href="comparing-drivers-live-sparse-telemetry.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="estimatating-time-deltas-between-drivers-over-small-sections.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="estimating-time-deltas-between-drivers-over-small-sections.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

@@ -40,7 +40,7 @@ stage_route_utm = get_route(geojson_sf, 7)
 stage_route_utm
 ```
 
-We can lookuo the stage length in meters from the route:
+We can obtain the stage length in meters from the route:
 
 ```{r}
 # Get the stage length.. this includes the units
@@ -202,7 +202,7 @@ ggplot() +
 
 In order to compare the time it takes two or more drivers to cover the same stretch of a stage route, we need to find out how long it takes each of them to cover that distance.
 
-The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it taks the driver to complete that section.
+The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it takes the driver to complete that section.
 
 
 ```{r}
@@ -241,11 +241,11 @@ fourmaux_1km_segments = segmentTimeDelta(fourmaux_time_estimator,
 fourmaux_1km_segments
 ```
 
-# Estimatating Time Deltas Between Drivers Over Small Sections
+# Estimating Time Deltas Between Drivers Over Small Sections
 
-We can now genereate a list of delta values describing the time difference between the drivers in completing each section.
+We can now generate a list of delta values describing the time difference between the drivers in completing each section.
 
-__Note that if the telemetry samples are widely separated, this estimates might be quite poor, particularky if they are based on linear interpolation of times between points.__
+__Note that if the telemetry samples are widely separated, this estimates might be quite poor, particularly if they are based on linear interpolation of times between points.__
 
 ```{r}
 dummy_split_deltas = evans_1km_segments - fourmaux_1km_segments
@@ -267,7 +267,7 @@ We can then plot the route with the time delta highlighted:
 ```{r}
 g = ggplot()+ coord_fixed()
 
-# Create a trace for each segemnt
+# Create a trace for each segment
 for (i in 1:length(segments)){
   start=(i-1)*segment_length
   end= start+segment_length
