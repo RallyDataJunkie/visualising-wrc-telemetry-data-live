@@ -183,10 +183,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.2" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#load-driver-data"><i class="fa fa-check"></i><b>7.2</b> Load Driver Data</a></li>
 <li class="chapter" data-level="7.3" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#get-annotated-route-telemetry"><i class="fa fa-check"></i><b>7.3</b> Get Annotated Route Telemetry</a></li>
 <li class="chapter" data-level="7.4" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#create-driver-estimators"><i class="fa fa-check"></i><b>7.4</b> Create Driver Estimators</a></li>
-<li class="chapter" data-level="7.5" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#creating-a-common-time-origin"><i class="fa fa-check"></i><b>7.5</b> Creating a Common Time Origin</a></li>
+<li class="chapter" data-level="7.5" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#creating-a-common-false-time-origin"><i class="fa fa-check"></i><b>7.5</b> Creating a Common False Time Origin</a></li>
 <li class="chapter" data-level="7.6" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#visual-driver-comparison"><i class="fa fa-check"></i><b>7.6</b> Visual Driver Comparison</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>8</b> Interpolation Using A Speed Model</a></li>
+<li class="chapter" data-level="8" data-path="finding-the-time-to-complete-a-particular-stretch.html"><a href="finding-the-time-to-complete-a-particular-stretch.html"><i class="fa fa-check"></i><b>8</b> Finding the Time to Complete a Particular Stretch</a></li>
+<li class="chapter" data-level="9" data-path="estimatating-time-deltas-between-drivers-over-small-sections.html"><a href="estimatating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimatating Time Deltas Between Drivers Over Small Sections</a></li>
+<li class="chapter" data-level="10" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Speed Model</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
 
@@ -804,7 +806,7 @@ POINT (400938.8 6856299)
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb24-1" aria-hidden="true" tabindex="-1"></a>false_origin_time <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc[<span class="dv">1</span>]</span>
 <span id="cb24-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb24-2" aria-hidden="true" tabindex="-1"></a>false_origin_time</span></code></pre></div>
 <pre><code>## [1] &quot;2021-10-02 08:37:23 UTC&quot;</code></pre>
-<p>And then generate delats from that:</p>
+<p>And then generate deltas from that:</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get stage time as a time object...</span></span>
 <span id="cb26-2"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb26-2" aria-hidden="true" tabindex="-1"></a>route_telem_utm<span class="sc">$</span>falsedelta_t <span class="ot">=</span> route_telem_utm<span class="sc">$</span>utc <span class="sc">-</span> false_origin_time</span>
 <span id="cb26-3"><a href="plotting-locations-a-certain-time-into-the-stage.html#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># And in seconds</span></span>

@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>6 Interpolating Times Along the Route | Visualising WRC Telemetry Data</title>
+  <title>8 Finding the Time to Complete a Particular Stretch | Visualising WRC Telemetry Data</title>
   <meta name="description" content="Analysing WRC telemetry data." />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="6 Interpolating Times Along the Route | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="8 Finding the Time to Complete a Particular Stretch | Visualising WRC Telemetry Data" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="6 Interpolating Times Along the Route | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="8 Finding the Time to Complete a Particular Stretch | Visualising WRC Telemetry Data" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="plotting-locations-a-certain-time-into-the-stage.html"/>
-<link rel="next" href="comparing-drivers-live-sparse-telemetry.html"/>
+<link rel="prev" href="comparing-drivers-live-sparse-telemetry.html"/>
+<link rel="next" href="estimatating-time-deltas-between-drivers-over-small-sections.html"/>
 <script src="libs/header-attrs-2.7/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -209,44 +209,48 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="interpolating-times-along-the-route" class="section level1" number="6">
-<h1><span class="header-section-number">6</span> Interpolating Times Along the Route</h1>
-<p>Generating distances along the route, or “ghost” split points, gives us some basis for being able to make comparisons between cars. But we are still faced with a very particular problem: it’s unlikely that any two cars will generate telemetry sample points at the same location, which is to say, the same distance along the line.</p>
-<p>In order to compare times at the same location, as we do with official split times, we need to generate some sort of model that lets us interpolate times along the route. This would then allow us compare times, albeit estimated ones, at the same location.</p>
-<p><em>For more accuracy, this could should be done based on a speed model constructed from an analysis of route curvature.</em></p>
-<p>One way of doing this is to generate an estimator function based on the time and distance data in the telemetry data frame.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="interpolating-times-along-the-route.html#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate the time based on the distance into the route</span></span>
-<span id="cb29-2"><a href="interpolating-times-along-the-route.html#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Add in an origin time at the stage of the stage</span></span>
-<span id="cb29-3"><a href="interpolating-times-along-the-route.html#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># If necessary, we could also add a crude acceleration effect</span></span>
-<span id="cb29-4"><a href="interpolating-times-along-the-route.html#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># model at the start of the stage</span></span>
-<span id="cb29-5"><a href="interpolating-times-along-the-route.html#cb29-5" aria-hidden="true" tabindex="-1"></a>time_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(<span class="fu">c</span>(<span class="dv">0</span>, route_telem_utm<span class="sc">$</span>dist),</span>
-<span id="cb29-6"><a href="interpolating-times-along-the-route.html#cb29-6" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">c</span>(<span class="dv">0</span>, route_telem_utm<span class="sc">$</span>roundeddelta_s))</span>
-<span id="cb29-7"><a href="interpolating-times-along-the-route.html#cb29-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-8"><a href="interpolating-times-along-the-route.html#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate the distance based on the time into the route</span></span>
-<span id="cb29-9"><a href="interpolating-times-along-the-route.html#cb29-9" aria-hidden="true" tabindex="-1"></a>distance_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(route_telem_utm<span class="sc">$</span>roundeddelta_s,</span>
-<span id="cb29-10"><a href="interpolating-times-along-the-route.html#cb29-10" aria-hidden="true" tabindex="-1"></a>                              route_telem_utm<span class="sc">$</span>dist)</span></code></pre></div>
-<p>We can then use these estimator functions to estimate times at particular distances along the route, and <em>vice versa</em>.</p>
-<p>For example, let’s create notional split points every 500 meters along the route, plotting both the predicted times and the actual times:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="interpolating-times-along-the-route.html#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample every 500m</span></span>
-<span id="cb30-2"><a href="interpolating-times-along-the-route.html#cb30-2" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">to=</span><span class="fu">max</span>(route_telem_utm<span class="sc">$</span>dist), <span class="at">by=</span><span class="dv">500</span>)</span>
-<span id="cb30-3"><a href="interpolating-times-along-the-route.html#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="interpolating-times-along-the-route.html#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
-<span id="cb30-5"><a href="interpolating-times-along-the-route.html#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Predicted line in pink</span></span>
-<span id="cb30-6"><a href="interpolating-times-along-the-route.html#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>vals, <span class="at">y=</span><span class="fu">time_estimator</span>(vals)), <span class="at">size=</span><span class="dv">3</span>, <span class="at">colour=</span><span class="st">&#39;pink&#39;</span>) <span class="sc">+</span></span>
-<span id="cb30-7"><a href="interpolating-times-along-the-route.html#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Sampled times in black</span></span>
-<span id="cb30-8"><a href="interpolating-times-along-the-route.html#cb30-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>route_telem_utm, <span class="fu">aes</span>(<span class="at">x=</span>dist, <span class="at">y=</span>roundeddelta_s),</span>
-<span id="cb30-9"><a href="interpolating-times-along-the-route.html#cb30-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">color=</span><span class="st">&#39;black&#39;</span>, <span class="at">size=</span><span class="dv">1</span>)</span></code></pre></div>
-<p><img src="images/preview_stage_timedist_estimate-1.png" width="672" /></p>
-<p>If we have multiple drivers, we can generate an interpolation function for each one. These models can then be used to predict driver times at notional split point locations (for example, every 200 meters or so). In this way, we can try to identify where drivers are gaining or losing time with respect to each other and start to build up stage maps showing how drivers compare with each other along the whole length of the stage.</p>
-
+<div id="finding-the-time-to-complete-a-particular-stretch" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Finding the Time to Complete a Particular Stretch</h1>
+<p>In order to compare the time it takes two or more drivers to cover the same stretch of a stage route, we need to find out how long it takes each of them to cover that distance.</p>
+<p>The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it taks the driver to complete that section.</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Return time to travel along a segment. </span></span>
+<span id="cb55-2"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Units relate to whether the distances are in eg m or km</span></span>
+<span id="cb55-3"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-3" aria-hidden="true" tabindex="-1"></a>segmentTimeDelta <span class="ot">=</span> <span class="cf">function</span>(driver_estimator, cumdist,</span>
+<span id="cb55-4"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-4" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">stretch=</span><span class="dv">100</span>, <span class="at">units=</span><span class="st">&#39;m&#39;</span>){</span>
+<span id="cb55-5"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb55-6"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">driver_estimator</span>(cumdist<span class="sc">+</span>stretch) <span class="sc">-</span> <span class="fu">driver_estimator</span>(cumdist)</span>
+<span id="cb55-7"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb55-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>We can now generate a simple estimate of the time taken to complete each segment:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co">#18163.4 %/% 1000 -&gt; 18</span></span>
+<span id="cb56-2"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Get sections 1000m long</span></span>
+<span id="cb56-3"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-3" aria-hidden="true" tabindex="-1"></a>segment_length <span class="ot">=</span> <span class="dv">1000</span></span>
+<span id="cb56-4"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-5"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-5" aria-hidden="true" tabindex="-1"></a><span class="co">#units = &#39;m&#39;</span></span>
+<span id="cb56-6"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-6" aria-hidden="true" tabindex="-1"></a><span class="co">#segment_length_m = set_units(segment_length, m)</span></span>
+<span id="cb56-7"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-8"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-8" aria-hidden="true" tabindex="-1"></a>segments <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from=</span><span class="dv">0</span>, <span class="at">to=</span>stage_length, <span class="at">by =</span> segment_length)</span>
+<span id="cb56-9"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-10"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-10" aria-hidden="true" tabindex="-1"></a>evans_1km_segments <span class="ot">=</span> <span class="fu">segmentTimeDelta</span>(evans_time_estimator,</span>
+<span id="cb56-11"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-11" aria-hidden="true" tabindex="-1"></a>                                      segments, segment_length)</span>
+<span id="cb56-12"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb56-12" aria-hidden="true" tabindex="-1"></a>evans_1km_segments</span></code></pre></div>
+<pre><code>##  [1] 37.58843 26.93338 28.29342 26.21198 30.94418 24.63189 27.20249 31.85834
+##  [9] 32.99157 25.37383 36.76296 27.10636 28.68083 20.69407 20.13347 31.38227
+## [17] 26.35240       NA       NA</code></pre>
+<p>Let’s also grab similar estimates for another driver:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb58-1" aria-hidden="true" tabindex="-1"></a>fourmaux_1km_segments <span class="ot">=</span> <span class="fu">segmentTimeDelta</span>(fourmaux_time_estimator,</span>
+<span id="cb58-2"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb58-2" aria-hidden="true" tabindex="-1"></a>                                         segments, segment_length)</span>
+<span id="cb58-3"><a href="finding-the-time-to-complete-a-particular-stretch.html#cb58-3" aria-hidden="true" tabindex="-1"></a>fourmaux_1km_segments</span></code></pre></div>
+<pre><code>##  [1] 35.36710 28.22918 28.49147 27.66114 31.34492 26.23118 29.05474 32.60108
+##  [9] 34.48317 31.58292 32.36769 27.78844 27.56022 25.43212 25.43212 25.43212
+## [17] 25.43212 25.43212       NA</code></pre>
 </div>
             </section>
 
           </div>
         </div>
       </div>
-<a href="plotting-locations-a-certain-time-into-the-stage.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="comparing-drivers-live-sparse-telemetry.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="comparing-drivers-live-sparse-telemetry.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="estimatating-time-deltas-between-drivers-over-small-sections.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

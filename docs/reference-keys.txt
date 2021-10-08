@@ -21,6 +21,8 @@ generate-buffered-route
 load-driver-data
 get-annotated-route-telemetry
 create-driver-estimators
-creating-a-common-time-origin
+creating-a-common-false-time-origin
 visual-driver-comparison
+finding-the-time-to-complete-a-particular-stretch
+estimatating-time-deltas-between-drivers-over-small-sections
 interpolation-using-a-speed-model

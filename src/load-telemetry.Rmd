@@ -389,7 +389,7 @@ false_origin_time = route_telem_utm$utc[1]
 false_origin_time
 ```
 
-And then generate delats from that:
+And then generate deltas from that:
 
 ```{r false_origin_delta}
 # Get stage time as a time object...

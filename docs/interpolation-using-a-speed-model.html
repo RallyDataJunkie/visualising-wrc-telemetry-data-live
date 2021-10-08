@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>8 Interpolation Using A Speed Model | Visualising WRC Telemetry Data</title>
+  <title>10 Interpolation Using A Speed Model | Visualising WRC Telemetry Data</title>
   <meta name="description" content="Analysing WRC telemetry data." />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="8 Interpolation Using A Speed Model | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="10 Interpolation Using A Speed Model | Visualising WRC Telemetry Data" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="8 Interpolation Using A Speed Model | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="10 Interpolation Using A Speed Model | Visualising WRC Telemetry Data" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -30,7 +30,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="comparing-drivers-live-sparse-telemetry.html"/>
+<link rel="prev" href="estimatating-time-deltas-between-drivers-over-small-sections.html"/>
 
 <script src="libs/header-attrs-2.7/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
@@ -183,10 +183,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.2" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#load-driver-data"><i class="fa fa-check"></i><b>7.2</b> Load Driver Data</a></li>
 <li class="chapter" data-level="7.3" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#get-annotated-route-telemetry"><i class="fa fa-check"></i><b>7.3</b> Get Annotated Route Telemetry</a></li>
 <li class="chapter" data-level="7.4" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#create-driver-estimators"><i class="fa fa-check"></i><b>7.4</b> Create Driver Estimators</a></li>
-<li class="chapter" data-level="7.5" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#creating-a-common-time-origin"><i class="fa fa-check"></i><b>7.5</b> Creating a Common Time Origin</a></li>
+<li class="chapter" data-level="7.5" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#creating-a-common-false-time-origin"><i class="fa fa-check"></i><b>7.5</b> Creating a Common False Time Origin</a></li>
 <li class="chapter" data-level="7.6" data-path="comparing-drivers-live-sparse-telemetry.html"><a href="comparing-drivers-live-sparse-telemetry.html#visual-driver-comparison"><i class="fa fa-check"></i><b>7.6</b> Visual Driver Comparison</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>8</b> Interpolation Using A Speed Model</a></li>
+<li class="chapter" data-level="8" data-path="finding-the-time-to-complete-a-particular-stretch.html"><a href="finding-the-time-to-complete-a-particular-stretch.html"><i class="fa fa-check"></i><b>8</b> Finding the Time to Complete a Particular Stretch</a></li>
+<li class="chapter" data-level="9" data-path="estimatating-time-deltas-between-drivers-over-small-sections.html"><a href="estimatating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimatating Time Deltas Between Drivers Over Small Sections</a></li>
+<li class="chapter" data-level="10" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Speed Model</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
 
@@ -207,8 +209,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="interpolation-using-a-speed-model" class="section level1" number="8">
-<h1><span class="header-section-number">8</span> Interpolation Using A Speed Model</h1>
+<div id="interpolation-using-a-speed-model" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Interpolation Using A Speed Model</h1>
 <p>Based on the curvature of the route, the speed model gives us a crude estimate of how long it takes to get between two points. If the route is a flat straight between the points, we’ll travel 1km in much less time than if the route it tight and twisty.</p>
 <p>The simple <code>approxfun()</code> interpolator uses a linear model to interpolate times between actual time points, but we might be able to improve interpolated estimates using a non-linear model based on a speed model generated over the route based on the route curvature.</p>
 <ul>
@@ -216,13 +218,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>find distance into stage for each</li>
 <li>get consecutive telemetry points between which desired distance lays (in_d, out_d, in_t, out_t)</li>
 </ul>
-<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="interpolation-using-a-speed-model.html#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> l <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">1.1</span>,<span class="fl">2.1</span>,<span class="fl">3.1</span>,<span class="fl">4.1</span>,<span class="fl">5.1</span>)</span>
-<span id="cb53-2"><a href="interpolation-using-a-speed-model.html#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">3</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">3</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
-<span id="cb53-3"><a href="interpolation-using-a-speed-model.html#cb53-3" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2.1</span> <span class="fl">3.1</span></span>
-<span id="cb53-4"><a href="interpolation-using-a-speed-model.html#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">1</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">1</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
-<span id="cb53-5"><a href="interpolation-using-a-speed-model.html#cb53-5" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.1</span></span>
-<span id="cb53-6"><a href="interpolation-using-a-speed-model.html#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">11</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">11</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
-<span id="cb53-7"><a href="interpolation-using-a-speed-model.html#cb53-7" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">5.1</span>  <span class="cn">NA</span></span></code></pre></div>
+<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="interpolation-using-a-speed-model.html#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> l <span class="ot">=</span> <span class="fu">c</span>(<span class="fl">1.1</span>,<span class="fl">2.1</span>,<span class="fl">3.1</span>,<span class="fl">4.1</span>,<span class="fl">5.1</span>)</span>
+<span id="cb69-2"><a href="interpolation-using-a-speed-model.html#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">3</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">3</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
+<span id="cb69-3"><a href="interpolation-using-a-speed-model.html#cb69-3" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">2.1</span> <span class="fl">3.1</span></span>
+<span id="cb69-4"><a href="interpolation-using-a-speed-model.html#cb69-4" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">1</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">1</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
+<span id="cb69-5"><a href="interpolation-using-a-speed-model.html#cb69-5" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">1.1</span></span>
+<span id="cb69-6"><a href="interpolation-using-a-speed-model.html#cb69-6" aria-hidden="true" tabindex="-1"></a><span class="sc">&gt;</span> <span class="fu">c</span>(l[<span class="fu">findInterval</span>(<span class="dv">11</span>, l)], l[<span class="fu">findInterval</span>(<span class="dv">11</span>, l)<span class="sc">+</span><span class="dv">1</span>])</span>
+<span id="cb69-7"><a href="interpolation-using-a-speed-model.html#cb69-7" aria-hidden="true" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">5.1</span>  <span class="cn">NA</span></span></code></pre></div>
 <ul>
 <li>get speed model</li>
 <li>get model time at points (in_mt=model(in_d), out_mt=model(out_d), desired_mt=model(desired_d))</li>
@@ -237,7 +239,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
         </div>
       </div>
-<a href="comparing-drivers-live-sparse-telemetry.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="estimatating-time-deltas-between-drivers-over-small-sections.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
 
     </div>
   </div>
