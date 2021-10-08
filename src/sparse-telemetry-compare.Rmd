@@ -266,18 +266,26 @@ We can then plot the route with the time delta highlighted:
 
 ```{r}
 g = ggplot()+ coord_fixed()
-  for (i in 1:length(segments)){
-    start=(i-1)*segment_length
-  end= start+segment_length
-segment_filter = trj$cum_dist >= start &
-    trj$cum_dist <= end
-route_segment = trj[segment_filter,]
-c= dummy_split_deltas[i]
-if (is.na(c)) c=0
-route_segment$c = c
-g = g+geom_path(data=route_segment, aes(x=x, y=y, color=c))
-  }
 
+# Create a trace for each segemnt
+for (i in 1:length(segments)){
+  start=(i-1)*segment_length
+  end= start+segment_length
+  
+  # Filter out the part of the trajectory we want to plot
+  segment_filter = trj$cum_dist >= start & trj$cum_dist <= end
+  route_segment = trj[segment_filter,]
+  
+  # Set colour based on delta
+  c= dummy_split_deltas[i]
+  if (is.na(c)) c=0
+  route_segment$c = c
+  
+  # Add segment to plot
+  g = g+geom_path(data=route_segment, aes(x=x, y=y, color=c))
+}
+
+# Render plot
 g+scale_colour_gradient( low = "red", high = "green", breaks=c(0)) 
 ```
 # TO DO
