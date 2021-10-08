@@ -47,6 +47,19 @@ lonlat2UTMzone = function(lonlat) {
 
 ```
 
+Create a simple latitude/longitude CRS (co-ordinate reference system) string to specify the CRS for use with simple lat/long data:
+
+```{r}
+latlon_crs = 4326
+```
+
+We can also set the timezone. This might be done explicitly, or from a location co-ordinate using the *R* `lutz` package.
+
+```{r}
+timezone = "Europe/Helsinki"
+```
+
+
 ## Loading in the Telemetry Route Data
 
 The data is available in the form of a simple CSV data file.
@@ -82,17 +95,23 @@ We can perform a small amount of cleaning on the data to remove any rows where t
 To better manage the timing components, we can cast the universal time stamp (in milliseconds) to a datetime stamp, ensuring we also set the correct time zone along the way. A `delta_s` columns is also used to capture the time difference (in seconds) between sample points.
 
 ```{r telem_demo_clean, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE }
-latlon_crs = 4326
-
 telem_df_min = telem_df_min %>%
                   drop_na(lon, lat) %>%
                   st_as_sf(coords = c("lon","lat")) %>%
-                  st_set_crs(latlon_crs) %>%
+                  st_set_crs(latlon_crs)
+
+
+# Automatically set the timezone
+library(lutz)
+timezone_lookup = tz_lookup(telem_df_min[1]$geometry[1],
+                            method = "accurate") #by default: fast
+
+telem_df_min = telem_df_min %>%
                   # Set datetime and delta_s
                   mutate(delta_s=cumsum(c(0,diff(utx)))/1000)%>%
                   mutate(utc = as.POSIXct(utx/1000,
                                           origin = "1970-01-01",
-                                          tz = "Europe/Helsinki")) 
+                                          tz = timezone)) 
 
 kable(head(telem_df_min), format = "html") %>%
   kable_styling() %>%
@@ -321,6 +340,21 @@ leaflet() %>%
 
 # Plotting Locations a Certain Time Into the Stage
 
+In order to calculate the time into stage, we need to set the time series origin somehow. If we have a telemetry data point recorded at the start stage start (location wise) when the light goes green, we can use that time as the time origin. But what if that data is not available, which is highly likely when working with low resolution live location data?
+
+## Find the Stage Telemetry Time Series Origin
+
+One approach would be to look to the timing and results data for data describing the start time of the stage for the particular data. This time can then be used as the tie origin (with a check to make sure it looks sensible!). But this approach brings with it the overhead of having to lookup that data via the WRC API.
+
+We can also set the time from a time passed as a string. For example:
+
+```{r}
+explicit_time_origin = ymd_hms("2020-04-01 10:30:13", tz=timezone)
+```
+
+
+### Estimating the Start Time
+
 If we are missing timing data from the start of the run, *and* we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the `lubridate::round_date()` function:
 
 ```{r estimate_stage_start_time}
@@ -335,9 +369,9 @@ We can then use the rounded first time as a basis for a running stage time estim
 
 ```{r stage_time_process}
 # Get stage time as a time object...
-route_telem_utm$newdelta_t = route_telem_utm$utc - first_time_rounded
+route_telem_utm$roundeddelta_t = route_telem_utm$utc - first_time_rounded
 # And in seconds
-route_telem_utm$newdelta_s = as.double(route_telem_utm$newdelta_t)
+route_telem_utm$roundeddelta_s = as.double(route_telem_utm$roundeddelta_t)
 ```
 
 ```{r echo=FALSE}
@@ -346,13 +380,46 @@ kable(head(route_telem_utm), format = "html") %>%
   kableExtra::scroll_box(width = "100%")
 ```
 
+### Using a False Origin
+
+Another approach to setting the origin is to not set one; or rather, to start the time series with a false origin, such as the first location point. The time into stage (from the false origin) can then be found by using the sample time of the first in-stage telemetry data point as the time origin set at that location.
+
+```{r}
+false_origin_time = route_telem_utm$utc[1]
+false_origin_time
+```
+
+And then generate delats from that:
+
+```{r false_origin_delta}
+# Get stage time as a time object...
+route_telem_utm$falsedelta_t = route_telem_utm$utc - false_origin_time
+# And in seconds
+route_telem_utm$falsedelta_s = as.double(route_telem_utm$falsedelta_t)
+```
+
+```{r}
+kable(head(route_telem_utm %>% select(c(utc, roundeddelta_t, roundeddelta_s,
+                                        falsedelta_t, falsedelta_s))),
+      format = "html") %>%
+  kable_styling() %>%
+  kableExtra::scroll_box(width = "100%")
+```
+
+This approach might also extended for use when comparing two or more drivers, by setting a false origin for each driver, then rebasing against a common origin set at the location origin furthest into the start for the drivers being compared.
+
+
+## Plotting the Stage Telemetry Time Series
+
 We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.
 
 ```{r preview_dist_into_stage}
-ggplot(route_telem_utm) +geom_line(aes(x=dist, y=newdelta_s))
+ggplot(route_telem_utm) +geom_line(aes(x=dist, y=roundeddelta_s))
 ```
 
 If we have data for two or more cars, this would start to provide a basis for comparison. For example, we might be able to see the distance along the stage where their times diverge.
+
+We might also plot a *distance versus time* graph.
 
 # Interpolating Times Along the Route
 
@@ -370,10 +437,10 @@ One way of doing this is to generate an estimator function based on the time and
 # If necessary, we could also add a crude acceleration effect
 # model at the start of the stage
 time_estimator = approxfun(c(0, route_telem_utm$dist),
-                           c(0, route_telem_utm$newdelta_s))
+                           c(0, route_telem_utm$roundeddelta_s))
 
 # Estimate the distance based on the time into the route
-distance_estimator = approxfun(route_telem_utm$newdelta_s,
+distance_estimator = approxfun(route_telem_utm$roundeddelta_s,
                               route_telem_utm$dist)
 ```
 
@@ -389,7 +456,7 @@ ggplot() +
   # Predicted line in pink
   geom_line(aes(x=vals, y=time_estimator(vals)), size=3, colour='pink') +
   # Sampled times in black
-  geom_point(data=route_telem_utm, aes(x=dist, y=newdelta_s),
+  geom_point(data=route_telem_utm, aes(x=dist, y=roundeddelta_s),
              color='black', size=1)
 ```
 

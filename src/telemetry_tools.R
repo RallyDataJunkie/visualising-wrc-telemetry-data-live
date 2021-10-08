@@ -151,9 +151,9 @@ get_telem_dists = function(route_telem_utm, stage_route_utm) {
   first_time_rounded = round_date(first_time, unit="1 minutes") 
   
   # Get stage time as a time object...
-  route_telem_utm$newdelta_t = route_telem_utm$utc - first_time_rounded
+  route_telem_utm$roundeddelta_t = route_telem_utm$utc - first_time_rounded
   # And in seconds
-  route_telem_utm$newdelta_s = as.double(route_telem_utm$newdelta_t)
+  route_telem_utm$roundeddelta_s = as.double(route_telem_utm$roundeddelta_t)
   
   route_telem_utm
 }

@@ -10,6 +10,10 @@ comparing-stage-route-telemetry-and-the-stage-route
 telemetry-data-along-a-stage
 finding-points-on-the-route-closest-to-the-telemetry-data-locations
 plotting-locations-a-certain-time-into-the-stage
+find-the-stage-telemetry-time-series-origin
+estimating-the-start-time
+using-a-false-origin
+plotting-the-stage-telemetry-time-series
 interpolating-times-along-the-route
 comparing-drivers-live-sparse-telemetry
 load-route-data
@@ -17,3 +21,6 @@ generate-buffered-route
 load-driver-data
 get-annotated-route-telemetry
 create-driver-estimators
+creating-a-common-time-origin
+visual-driver-comparison
+interpolation-using-a-speed-model

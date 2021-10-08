@@ -56,6 +56,8 @@ Load in data for a handful of drivers:
 path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
 ```
 
+TO DO  - set the origin as the dummy origin
+
 ```{r}
 evans_min_telem = get_min_telem("Evans", "SS7", path)
 evans_min_telem_utm = evans_min_telem %>%
@@ -140,20 +142,26 @@ route_telem_fourmaux_utm
 
 From the annotated data can generate some naive estimators for stage time along route based on distance along route:
 
-```{r}
+```{r test_drivers_estimators}
 
 fourmaux_time_estimator = approxfun(c(0, route_telem_fourmaux_utm$dist),
-                           c(0, route_telem_fourmaux_utm$newdelta_s))
+                           c(0, route_telem_fourmaux_utm$roundeddelta_s))
 
 evans_time_estimator = approxfun(c(0, route_telem_evans_utm$dist),
-                           c(0, route_telem_evans_utm$newdelta_s))
+                           c(0, route_telem_evans_utm$roundeddelta_s))
 
 ```
 
 
+## Creating a Common Time Origin
+
+TO DO
+
+## Visual Driver Comparison
+
 Let's see if a visual comparison reveals anything:
 
-```{r}
+```{r test_compare_driver_telem_linechart, warning=FALSE, mesage=FALSE}
 # Sample every 500m
 vals = seq(to=max(c(route_telem_fourmaux_utm$dist,
                     route_telem_evans_utm$dist)), by=500)
@@ -162,12 +170,38 @@ ggplot() +
   # Predicted line in pink
   geom_line(aes(x=vals, y=evans_time_estimator(vals)), size=1, colour='blue') +
   geom_point(data=route_telem_evans_utm,
-             aes(x=dist, y=newdelta_s), size=1, colour='red') +
+             aes(x=dist, y=roundeddelta_s), size=1, colour='red') +
   # Sampled times in black
   geom_line(aes(x=vals, y=fourmaux_time_estimator(vals)),
             color='red', size=1) +
   geom_point(data=route_telem_fourmaux_utm,
-             aes(x=dist, y=newdelta_s), size=1, colour='blue')
+             aes(x=dist, y=roundeddelta_s), size=1, colour='blue')
 
 ```
 
+# Interpolation Using A Speed Model
+
+Based on the curvature of the route, the speed model gives us a crude estimate of how long it takes to get between two points. If the route is a flat straight between the points, we'll travel 1km in much less time than if the route it tight and twisty.
+
+The simple `approxfun()` interpolator uses a linear model to interpolate times between actual time points, but we might be able to improve interpolated estimates using a non-linear model based on a speed model generated over the route based on the route curvature. 
+
+- identify distance into stage required (desired_d)
+- find distance into stage for each
+- get consecutive telemetry points between which desired distance lays (in_d, out_d, in_t, out_t)
+
+```r
+> l = c(1.1,2.1,3.1,4.1,5.1)
+> c(l[findInterval(3, l)], l[findInterval(3, l)+1])
+[1] 2.1 3.1
+> c(l[findInterval(1, l)], l[findInterval(1, l)+1])
+[1] 1.1
+> c(l[findInterval(11, l)], l[findInterval(11, l)+1])
+[1] 5.1  NA
+```
+
+- get speed model
+- get model time at points (in_mt=model(in_d), out_mt=model(out_d), desired_mt=model(desired_d))
+- get interpolated normalised model time between points, desired_nt = (desired_mt - in_mt)/(out_mt - in_mt)
+- get predicted time desired_t = desired_nt*(out_t - in_t) + in_t
+
+TO DO
