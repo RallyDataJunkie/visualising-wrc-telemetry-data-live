@@ -192,7 +192,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11" data-path="full-telemetry.html"><a href="full-telemetry.html"><i class="fa fa-check"></i><b>11</b> Full telemetry</a></li>
 <li class="chapter" data-level="12" data-path="generating-a-trajr-route-from-the-telemetry-data.html"><a href="generating-a-trajr-route-from-the-telemetry-data.html"><i class="fa fa-check"></i><b>12</b> Generating a <code>trajr</code> Route From the Telemetry Data</a></li>
 <li class="chapter" data-level="13" data-path="finding-distance-into-a-common-route.html"><a href="finding-distance-into-a-common-route.html"><i class="fa fa-check"></i><b>13</b> Finding Distance into a Common Route</a></li>
-<li class="chapter" data-level="14" data-path="looking-at-braking-behaviour.html"><a href="looking-at-braking-behaviour.html"><i class="fa fa-check"></i><b>14</b> Looking At Braking Behaviour</a></li>
+<li class="chapter" data-level="14" data-path="looking-at-braking-behaviour.html"><a href="looking-at-braking-behaviour.html"><i class="fa fa-check"></i><b>14</b> Looking At Braking Behaviour</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="looking-at-braking-behaviour.html"><a href="looking-at-braking-behaviour.html#throttle-comparison"><i class="fa fa-check"></i><b>14.1</b> Throttle Comparison</a></li>
+</ul></li>
 <li class="chapter" data-level="15" data-path="comparing-times-into-stage.html"><a href="comparing-times-into-stage.html"><i class="fa fa-check"></i><b>15</b> Comparing Times Into Stage</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
@@ -239,6 +242,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb78-20"><a href="looking-at-braking-behaviour.html#cb78-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Already rectilinear...</span></span>
 <span id="cb78-21"><a href="looking-at-braking-behaviour.html#cb78-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_fixed</span>()</span></code></pre></div>
 <p><img src="images/unnamed-chunk-38-1.png" width="672" /></p>
+<div id="throttle-comparison" class="section level2" number="14.1">
+<h2><span class="header-section-number">14.1</span> Throttle Comparison</h2>
+<p>How do our two drivers compare in their use of the throttle?</p>
 <div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb79-1"><a href="looking-at-braking-behaviour.html#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
 <span id="cb79-2"><a href="looking-at-braking-behaviour.html#cb79-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>)),</span>
 <span id="cb79-3"><a href="looking-at-braking-behaviour.html#cb79-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle), <span class="at">color=</span><span class="st">&#39;red&#39;</span>) <span class="sc">+</span></span>
@@ -296,7 +302,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb85-30"><a href="looking-at-braking-behaviour.html#cb85-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey35&quot;</span>),  </span>
 <span id="cb85-31"><a href="looking-at-braking-behaviour.html#cb85-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey20&quot;</span>),  </span>
 <span id="cb85-32"><a href="looking-at-braking-behaviour.html#cb85-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.margin =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">&quot;lines&quot;</span>),   </span>
-<span id="cb85-33"><a href="looking-at-braking-behaviour.html#cb85-33" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify facetting options</span></span>
+<span id="cb85-33"><a href="looking-at-braking-behaviour.html#cb85-33" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify faceting options</span></span>
 <span id="cb85-34"><a href="looking-at-braking-behaviour.html#cb85-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;grey30&quot;</span>, <span class="at">color =</span> <span class="st">&quot;grey10&quot;</span>),  </span>
 <span id="cb85-35"><a href="looking-at-braking-behaviour.html#cb85-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
 <span id="cb85-36"><a href="looking-at-braking-behaviour.html#cb85-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>,<span class="at">angle =</span> <span class="sc">-</span><span class="dv">90</span>),  </span>
@@ -308,7 +314,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb85-42"><a href="looking-at-braking-behaviour.html#cb85-42" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb85-43"><a href="looking-at-braking-behaviour.html#cb85-43" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb85-44"><a href="looking-at-braking-behaviour.html#cb85-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>What happens if we try to colour the speed line accoording to the throttle and brake percentages?</p>
+<p>What happens if we try to colour the speed line according to the throttle and brake percentages?</p>
 <div class="sourceCode" id="cb86"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb86-1"><a href="looking-at-braking-behaviour.html#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
 <span id="cb86-2"><a href="looking-at-braking-behaviour.html#cb86-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(data=trj_ogier %&gt;% filter(cum_dist&gt;=1000 &amp; cum_dist&lt;=2000),</span></span>
 <span id="cb86-3"><a href="looking-at-braking-behaviour.html#cb86-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#          aes(x=cum_dist,y=speed), color=&#39;white&#39;, size=4) +</span></span>
@@ -329,6 +335,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="images/unnamed-chunk-43-1.png" width="672" /></p>
 <div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb89-1"><a href="looking-at-braking-behaviour.html#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>telem_df_full) <span class="sc">+</span> <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color=</span><span class="sc">-</span>brk), <span class="at">size=</span><span class="fl">0.1</span>)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-44-1.png" width="672" /></p>
+</div>
 </div>
             </section>
 

@@ -115,7 +115,7 @@ The data includes:
 - `rpm` revs;
 - `accx` and `accy` acceleration forces.
 
-If we plot these values against the distance into stage, generated from the location data and cross-referenced to the nearest point on the official stage route, we can generate a basis for comparison between different drivers.
+If we plot these values against the distance into stage, generated from the location data and cross-referenced to the nearest point on the official stage route, we can generate an idealised basis for comparison between different drivers. However, given that drivers typically follow a very similar line, and hence complete a similar distance over the stage, using their actual distance into the route should provide a reasonable, if approximate, basis for comparison most of the time.
 
 The `trajr` route actually calculates a distance into the route assuming an origin based on the first point in the route.
 
@@ -186,7 +186,9 @@ scale_color_gradient(low = "white", high = "red")+ stat_sf_coordinates( aes( col
   coord_fixed()
 ```
 
+## Throttle Comparison
 
+How do our two drivers compare in their use of the throttle?
 
 ```{r}
 ggplot() +
@@ -248,7 +250,7 @@ theme_black = function(base_size = 12, base_family = "") {
       panel.grid.major = element_line(color = "grey35"),  
       panel.grid.minor = element_line(color = "grey20"),  
       panel.margin = unit(0.5, "lines"),   
-      # Specify facetting options
+      # Specify faceting options
       strip.background = element_rect(fill = "grey30", color = "grey10"),  
       strip.text.x = element_text(size = base_size*0.8, color = "white"),  
       strip.text.y = element_text(size = base_size*0.8, color = "white",angle = -90),  
@@ -262,7 +264,7 @@ theme_black = function(base_size = 12, base_family = "") {
 }
 ```
 
-What happens if we try to colour the speed line accoording to the throttle and brake percentages?
+What happens if we try to colour the speed line according to the throttle and brake percentages?
 
 ```{r}
 ggplot() +
@@ -293,8 +295,9 @@ ggplot(data=telem_df_full) + geom_sf(aes(color=-brk), size=0.1)
 
 # Comparing Times Into Stage
 
+How do our drivers compare based on the time it takes them to driver a particular distance into the stage?
 
-How do the times compare?
+*Recall that we are using each car's own accumulated distance in to stage measure, rather than comparing times at distances into stage measured along some common, idealised route.*
 
 Sample common points to find the difference:
 
