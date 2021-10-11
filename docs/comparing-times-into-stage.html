@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>6 Interpolating Times Along the Route | Visualising WRC Telemetry Data</title>
+  <title>15 Comparing Times Into Stage | Visualising WRC Telemetry Data</title>
   <meta name="description" content="Analysing WRC telemetry data." />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="6 Interpolating Times Along the Route | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="6 Interpolating Times Along the Route | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="plotting-locations-a-certain-time-into-the-stage.html"/>
-<link rel="next" href="comparing-drivers-live-sparse-telemetry.html"/>
+<link rel="prev" href="looking-at-braking-behaviour.html"/>
+
 <script src="libs/header-attrs-2.7/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -214,35 +214,36 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="interpolating-times-along-the-route" class="section level1" number="6">
-<h1><span class="header-section-number">6</span> Interpolating Times Along the Route</h1>
-<p>Generating distances along the route, or “ghost” split points, gives us some basis for being able to make comparisons between cars. But we are still faced with a very particular problem: it’s unlikely that any two cars will generate telemetry sample points at the same location, which is to say, the same distance along the line.</p>
-<p>In order to compare times at the same location, as we do with official split times, we need to generate some sort of model that lets us interpolate times along the route. This would then allow us compare times, albeit estimated ones, at the same location.</p>
-<p><em>For more accuracy, this could should be done based on a speed model constructed from an analysis of route curvature.</em></p>
-<p>One way of doing this is to generate an estimator function based on the time and distance data in the telemetry data frame.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="interpolating-times-along-the-route.html#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate the time based on the distance into the route</span></span>
-<span id="cb29-2"><a href="interpolating-times-along-the-route.html#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Add in an origin time at the stage of the stage</span></span>
-<span id="cb29-3"><a href="interpolating-times-along-the-route.html#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># If necessary, we could also add a crude acceleration effect</span></span>
-<span id="cb29-4"><a href="interpolating-times-along-the-route.html#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># model at the start of the stage</span></span>
-<span id="cb29-5"><a href="interpolating-times-along-the-route.html#cb29-5" aria-hidden="true" tabindex="-1"></a>time_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(<span class="fu">c</span>(<span class="dv">0</span>, route_telem_utm<span class="sc">$</span>dist),</span>
-<span id="cb29-6"><a href="interpolating-times-along-the-route.html#cb29-6" aria-hidden="true" tabindex="-1"></a>                           <span class="fu">c</span>(<span class="dv">0</span>, route_telem_utm<span class="sc">$</span>roundeddelta_s))</span>
-<span id="cb29-7"><a href="interpolating-times-along-the-route.html#cb29-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-8"><a href="interpolating-times-along-the-route.html#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate the distance based on the time into the route</span></span>
-<span id="cb29-9"><a href="interpolating-times-along-the-route.html#cb29-9" aria-hidden="true" tabindex="-1"></a>distance_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(route_telem_utm<span class="sc">$</span>roundeddelta_s,</span>
-<span id="cb29-10"><a href="interpolating-times-along-the-route.html#cb29-10" aria-hidden="true" tabindex="-1"></a>                              route_telem_utm<span class="sc">$</span>dist)</span></code></pre></div>
-<p>We can then use these estimator functions to estimate times at particular distances along the route, and <em>vice versa</em>.</p>
-<p>For example, let’s create notional split points every 500 meters along the route, plotting both the predicted times and the actual times:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="interpolating-times-along-the-route.html#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample every 500m</span></span>
-<span id="cb30-2"><a href="interpolating-times-along-the-route.html#cb30-2" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">to=</span><span class="fu">max</span>(route_telem_utm<span class="sc">$</span>dist), <span class="at">by=</span><span class="dv">500</span>)</span>
-<span id="cb30-3"><a href="interpolating-times-along-the-route.html#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="interpolating-times-along-the-route.html#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
-<span id="cb30-5"><a href="interpolating-times-along-the-route.html#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Predicted line in pink</span></span>
-<span id="cb30-6"><a href="interpolating-times-along-the-route.html#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>vals, <span class="at">y=</span><span class="fu">time_estimator</span>(vals)), <span class="at">size=</span><span class="dv">3</span>, <span class="at">colour=</span><span class="st">&#39;pink&#39;</span>) <span class="sc">+</span></span>
-<span id="cb30-7"><a href="interpolating-times-along-the-route.html#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Sampled times in black</span></span>
-<span id="cb30-8"><a href="interpolating-times-along-the-route.html#cb30-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>route_telem_utm, <span class="fu">aes</span>(<span class="at">x=</span>dist, <span class="at">y=</span>roundeddelta_s),</span>
-<span id="cb30-9"><a href="interpolating-times-along-the-route.html#cb30-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">color=</span><span class="st">&#39;black&#39;</span>, <span class="at">size=</span><span class="dv">1</span>)</span></code></pre></div>
-<p><img src="images/preview_stage_timedist_estimate-1.png" width="672" /></p>
-<p>If we have multiple drivers, we can generate an interpolation function for each one. These models can then be used to predict driver times at notional split point locations (for example, every 200 meters or so). In this way, we can try to identify where drivers are gaining or losing time with respect to each other and start to build up stage maps showing how drivers compare with each other along the whole length of the stage.</p>
+<div id="comparing-times-into-stage" class="section level1" number="15">
+<h1><span class="header-section-number">15</span> Comparing Times Into Stage</h1>
+<p>How do the times compare?</p>
+<p>Sample common points to find the difference:</p>
+<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb90-1"><a href="comparing-times-into-stage.html#cb90-1" aria-hidden="true" tabindex="-1"></a>segment_length<span class="ot">=</span><span class="dv">100</span></span>
+<span id="cb90-2"><a href="comparing-times-into-stage.html#cb90-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-3"><a href="comparing-times-into-stage.html#cb90-3" aria-hidden="true" tabindex="-1"></a><span class="co"># stage_length set in earlier section</span></span>
+<span id="cb90-4"><a href="comparing-times-into-stage.html#cb90-4" aria-hidden="true" tabindex="-1"></a>segments <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from=</span><span class="dv">0</span>, <span class="at">to=</span>stage_length, <span class="at">by =</span> segment_length)</span>
+<span id="cb90-5"><a href="comparing-times-into-stage.html#cb90-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-6"><a href="comparing-times-into-stage.html#cb90-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-7"><a href="comparing-times-into-stage.html#cb90-7" aria-hidden="true" tabindex="-1"></a>ogier_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_ogier<span class="sc">$</span>cum_dist,</span>
+<span id="cb90-8"><a href="comparing-times-into-stage.html#cb90-8" aria-hidden="true" tabindex="-1"></a>                            trj_ogier<span class="sc">$</span>displacementTime)</span></code></pre></div>
+<pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+## collapsing to unique &#39;x&#39; values</code></pre>
+<div class="sourceCode" id="cb92"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb92-1"><a href="comparing-times-into-stage.html#cb92-1" aria-hidden="true" tabindex="-1"></a>evans_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_evans<span class="sc">$</span>cum_dist,</span>
+<span id="cb92-2"><a href="comparing-times-into-stage.html#cb92-2" aria-hidden="true" tabindex="-1"></a>                           trj_evans<span class="sc">$</span>displacementTime)</span></code></pre></div>
+<pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
+## collapsing to unique &#39;x&#39; values</code></pre>
+<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb94-1"><a href="comparing-times-into-stage.html#cb94-1" aria-hidden="true" tabindex="-1"></a>ogier_evans_point_delta <span class="ot">=</span> <span class="fu">ogier_full_estimator</span>(segments) <span class="sc">-</span> <span class="fu">evans_full_estimator</span>(segments)</span>
+<span id="cb94-2"><a href="comparing-times-into-stage.html#cb94-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-3"><a href="comparing-times-into-stage.html#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference in time take to reach a particular point in the stage</span></span>
+<span id="cb94-4"><a href="comparing-times-into-stage.html#cb94-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>()<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>segments, <span class="at">y=</span>ogier_evans_point_delta))</span></code></pre></div>
+<p><img src="images/unnamed-chunk-45-1.png" width="672" /></p>
+<p>Compare time into stage for a given distance into stage. Note that this is the distance into the stage as calculated from the trajectory, rather than by comparison of distances into the same (idealised) route.</p>
+<div class="sourceCode" id="cb95"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb95-1"><a href="comparing-times-into-stage.html#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb95-2"><a href="comparing-times-into-stage.html#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
+<span id="cb95-3"><a href="comparing-times-into-stage.html#cb95-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb95-4"><a href="comparing-times-into-stage.html#cb95-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
+<span id="cb95-5"><a href="comparing-times-into-stage.html#cb95-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;grey&#39;</span>) </span></code></pre></div>
+<p><img src="images/unnamed-chunk-46-1.png" width="672" /></p>
 
 </div>
             </section>
@@ -250,8 +251,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
         </div>
       </div>
-<a href="plotting-locations-a-certain-time-into-the-stage.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="comparing-drivers-live-sparse-telemetry.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="looking-at-braking-behaviour.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

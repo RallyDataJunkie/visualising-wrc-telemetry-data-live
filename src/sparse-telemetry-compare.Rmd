@@ -252,13 +252,15 @@ dummy_split_deltas = evans_1km_segments - fourmaux_1km_segments
 head(dummy_split_deltas, 3)
 ```
 
-If we cast the original route to a `trajr` directory, we can easily split the rout into separate sections based on the cumulative distance of step along the route.
+If we cast the original route to a `trajr` directory, we can easily split the route into separate sections based on the cumulative distance of steps along the route.
 
 ```{r}
 library(trajr)
 
 trj <- TrajFromCoords(as.data.frame(st_coordinates(stage_route_utm)))
 trj$distance = Mod(trj$displacement)
+
+# Note that the trj object natively also provides a displacement time
 trj$cum_dist = cumsum(trj$distance)
 ```
 
@@ -324,6 +326,14 @@ df_dummy_split_coords$delta = dummy_split_deltas
 head(df_dummy_split_coords, 3)
 ```
 
+
+We can also split the co-ordinates out from the geometry using a recipe such as:
+```{r}
+#https://stackoverflow.com/questions/54734771/sf-write-lat-long-from-geometry-into-separate-column-and-keep-id-column
+#df %>%
+#    mutate(lat = unlist(map(geometry,1)),
+#           long = unlist(map(geometry,2)))
+```
 
 # Interpolation Using A Speed Model
 

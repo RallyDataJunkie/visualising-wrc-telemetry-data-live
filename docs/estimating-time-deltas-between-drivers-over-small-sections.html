@@ -189,6 +189,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="8" data-path="finding-the-time-to-complete-a-particular-stretch.html"><a href="finding-the-time-to-complete-a-particular-stretch.html"><i class="fa fa-check"></i><b>8</b> Finding the Time to Complete a Particular Stretch</a></li>
 <li class="chapter" data-level="9" data-path="estimating-time-deltas-between-drivers-over-small-sections.html"><a href="estimating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimating Time Deltas Between Drivers Over Small Sections</a></li>
 <li class="chapter" data-level="10" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Speed Model</a></li>
+<li class="chapter" data-level="11" data-path="full-telemetry.html"><a href="full-telemetry.html"><i class="fa fa-check"></i><b>11</b> Full telemetry</a></li>
+<li class="chapter" data-level="12" data-path="generating-a-trajr-route-from-the-telemetry-data.html"><a href="generating-a-trajr-route-from-the-telemetry-data.html"><i class="fa fa-check"></i><b>12</b> Generating a <code>trajr</code> Route From the Telemetry Data</a></li>
+<li class="chapter" data-level="13" data-path="finding-distance-into-a-common-route.html"><a href="finding-distance-into-a-common-route.html"><i class="fa fa-check"></i><b>13</b> Finding Distance into a Common Route</a></li>
+<li class="chapter" data-level="14" data-path="looking-at-braking-behaviour.html"><a href="looking-at-braking-behaviour.html"><i class="fa fa-check"></i><b>14</b> Looking At Braking Behaviour</a></li>
+<li class="chapter" data-level="15" data-path="comparing-times-into-stage.html"><a href="comparing-times-into-stage.html"><i class="fa fa-check"></i><b>15</b> Comparing Times Into Stage</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
 
@@ -216,12 +221,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb60-1" aria-hidden="true" tabindex="-1"></a>dummy_split_deltas <span class="ot">=</span> evans_1km_segments <span class="sc">-</span> fourmaux_1km_segments</span>
 <span id="cb60-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dummy_split_deltas, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>## [1]  2.2213305 -1.2957991 -0.1980497</code></pre>
-<p>If we cast the original route to a <code>trajr</code> directory, we can easily split the rout into separate sections based on the cumulative distance of step along the route.</p>
+<p>If we cast the original route to a <code>trajr</code> directory, we can easily split the route into separate sections based on the cumulative distance of steps along the route.</p>
 <div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(trajr)</span>
 <span id="cb62-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-3"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-3" aria-hidden="true" tabindex="-1"></a>trj <span class="ot">&lt;-</span> <span class="fu">TrajFromCoords</span>(<span class="fu">as.data.frame</span>(<span class="fu">st_coordinates</span>(stage_route_utm)))</span>
 <span id="cb62-4"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-4" aria-hidden="true" tabindex="-1"></a>trj<span class="sc">$</span>distance <span class="ot">=</span> <span class="fu">Mod</span>(trj<span class="sc">$</span>displacement)</span>
-<span id="cb62-5"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-5" aria-hidden="true" tabindex="-1"></a>trj<span class="sc">$</span>cum_dist <span class="ot">=</span> <span class="fu">cumsum</span>(trj<span class="sc">$</span>distance)</span></code></pre></div>
+<span id="cb62-5"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Note that the trj object natively also provides a displacement time</span></span>
+<span id="cb62-7"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb62-7" aria-hidden="true" tabindex="-1"></a>trj<span class="sc">$</span>cum_dist <span class="ot">=</span> <span class="fu">cumsum</span>(trj<span class="sc">$</span>distance)</span></code></pre></div>
 <p>We can then plot the route with the time delta highlighted:</p>
 <div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb63-1" aria-hidden="true" tabindex="-1"></a>g <span class="ot">=</span> <span class="fu">ggplot</span>()<span class="sc">+</span> <span class="fu">coord_fixed</span>()</span>
 <span id="cb63-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb63-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -263,7 +270,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb64-13"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb64-13" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb64-14"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb64-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb64-15"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb64-15" aria-hidden="true" tabindex="-1"></a><span class="fu">getlocation</span>(stage_route_utm, <span class="fu">c</span>(<span class="dv">1500</span>, <span class="dv">2000</span>))</span></code></pre></div>
-<pre><code>## Warning in proj4string(spgeom): CRS object has comment, which is lost in output</code></pre>
 <pre><code>## Simple feature collection with 2 features and 0 fields
 ## geometry type:  POINT
 ## dimension:      XY
@@ -272,20 +278,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##                    geometry
 ## 1 POINT (25.11525 61.82377)
 ## 2 POINT (25.11939 61.81992)</code></pre>
-<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Not required?</span></span>
-<span id="cb67-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-2" aria-hidden="true" tabindex="-1"></a>df_dummy_split_points <span class="ot">=</span> <span class="fu">getlocation</span>(stage_route_utm, segments)</span>
-<span id="cb67-3"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-3" aria-hidden="true" tabindex="-1"></a>df_dummy_split_coords <span class="ot">=</span> df_dummy_split_points <span class="sc">%&gt;%</span> </span>
-<span id="cb67-4"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-4" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">st_coordinates</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb67-5"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-5" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb67-6"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-6" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">rename</span>(<span class="at">lon=</span>X, <span class="at">lat=</span>Y)</span>
-<span id="cb67-7"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-8"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-8" aria-hidden="true" tabindex="-1"></a>df_dummy_split_coords<span class="sc">$</span>delta <span class="ot">=</span> dummy_split_deltas</span>
-<span id="cb67-9"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb67-10"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb67-10" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df_dummy_split_coords, <span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb66-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Not required?</span></span>
+<span id="cb66-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-2" aria-hidden="true" tabindex="-1"></a>df_dummy_split_points <span class="ot">=</span> <span class="fu">getlocation</span>(stage_route_utm, segments)</span>
+<span id="cb66-3"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-3" aria-hidden="true" tabindex="-1"></a>df_dummy_split_coords <span class="ot">=</span> df_dummy_split_points <span class="sc">%&gt;%</span> </span>
+<span id="cb66-4"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-4" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">st_coordinates</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb66-5"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-5" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb66-6"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-6" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">rename</span>(<span class="at">lon=</span>X, <span class="at">lat=</span>Y)</span>
+<span id="cb66-7"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-8"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-8" aria-hidden="true" tabindex="-1"></a>df_dummy_split_coords<span class="sc">$</span>delta <span class="ot">=</span> dummy_split_deltas</span>
+<span id="cb66-9"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-10"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb66-10" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df_dummy_split_coords, <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>##        lon      lat      delta
 ## 1 25.11383 61.83364  2.2213305
 ## 2 25.12013 61.82727 -1.2957991
 ## 3 25.11939 61.81992 -0.1980497</code></pre>
+<p>We can also split the co-ordinates out from the geometry using a recipe such as:</p>
+<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb68-1"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="co">#https://stackoverflow.com/questions/54734771/sf-write-lat-long-from-geometry-into-separate-column-and-keep-id-column</span></span>
+<span id="cb68-2"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="co">#df %&gt;%</span></span>
+<span id="cb68-3"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb68-3" aria-hidden="true" tabindex="-1"></a><span class="co">#    mutate(lat = unlist(map(geometry,1)),</span></span>
+<span id="cb68-4"><a href="estimating-time-deltas-between-drivers-over-small-sections.html#cb68-4" aria-hidden="true" tabindex="-1"></a><span class="co">#           long = unlist(map(geometry,2)))</span></span></code></pre></div>
 </div>
             </section>
 

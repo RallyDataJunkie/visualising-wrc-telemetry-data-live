@@ -1,0 +1,143 @@
+
+Now we need to find the nearest point on the actual route for each line to get a fair distance into route measure; use the UTM projection so we get things in meters:
+
+```{r}
+full_pois = st_sfc(st_multipoint(st_coordinates(telem_df_full_utm)),
+                      crs=st_crs(telem_df_full_utm))
+
+# Generate a list of points from a multipoint
+# Via: https://github.com/r-spatial/sf/issues/114
+full_pois_points = st_cast(x = full_pois, to = "POINT")
+```
+
+
+```{r}
+# how many points in route?
+test_route  %>% st_coordinates() %>% length()
+```
+
+```{r}
+#how many data samples?
+length(full_pois_points)
+```
+
+```{r}
+library(sfnetworks)
+
+route_dg = as_sfnetwork(st_geometry(route_telem_utm), directed = TRUE)
+
+blended = st_network_blend(route_dg, full_pois_points)
+```
+
+```{r}
+plot(route_dg, cex=0.5, col = 'grey', lwd = 6)
+
+plot(blended, cex=0.5, col='red', add=TRUE)
+
+plot(full_pois_points, col='blue', cex=0.1, add=TRUE)
+```
+
+
+```{r}
+blended
+```
+
+Generate a line of points along the route that the telemetry points are closest too.
+
+Note that there may be end effects is the start location of route and actual stage (from telemetry) don't match).
+
+
+
+It looks like the supplied route data is not brilliant...
+
+```{r}
+head(dist, 30)
+```
+
+Find distance along line of nearest point on line - - need to convert this to UTM (meters).
+
+
+```{r}
+point = as(route_telem,'Spatial')
+  
+zz = as.data.frame(rgeos::gProject(as(test_route, "Spatial"), point))
+```
+
+
+```{r}
+as(test_route, "Spatial")
+                
+```
+
+We are perhaps safer using `trajr` to find the distance along the route as generate from the pure telemetry:
+
+```{r}
+
+utm_telem_full = st_transform(telem_df_full,
+                              crs=utm_proj4_string) %>% 
+  mutate(lat = st_coordinates(.)[,1],
+                lon = st_coordinates(.)[,2])
+
+trj <- TrajFromCoords(utm_telem_full %>% select(lon, lat, utc),
+                      xCol="lon", yCol="lat", timeCol="utc")
+
+trj$distance = Mod(trj$displacement)
+
+trj$cum_dist = cumsum(trj$distance)
+
+trj$speed  = telem_df_full$speed
+trj$brk  = telem_df_full$brk
+trj$throttle  = telem_df_full$throttle
+trj$rpm  = telem_df_full$rpm
+trj$t  = telem_df_full$t
+trj
+```
+```{r}
+ggplot(trj) +geom_line(aes(y=t,x=cum_dist)) 
+```
+
+Could also try estimating the distance based on speed and time etc.
+
+
+
+```{r}
+ggplot(trj) +geom_line(aes(x=cum_dist,y=speed)) +
+    geom_line(aes(x=cum_dist,y=throttle), color='green') + geom_line(aes(x=cum_dist,y=brk), color='red')  
+```
+
+
+
+*We might still be able to hack something from the route using the live data (low quality), perhaps by starting some distance into the stage...*
+
+
+# BELOW junk???
+
+
+test_near2  = test_near %>% st_coordinates() %>% st_zm()
+#test_near2['speed'] = route_telem['speed']
+
+leaflet(test_near2 ) %>% 
+  addCircleMarkers() %>%
+  addProviderTiles("OpenTopoMap", group = "OSM")
+```
+
+
+
+ st_intersection(buffered_route, l2)
+
+
+
+trj <- TrajFromCoords(telem_df_min_ %>% select(lon, lat, utc),
+                      xCol="lon", yCol="lat", timeCol="utc")
+
+trj$distance = Mod(trj$displacement)
+
+trj$cum_dist = cumsum(trj$distance)
+
+trj
+
+plot(trj)
+
+ggplot(trj)+geom_line(aes(x=displacementTime, y=cum_dist))
+
+```

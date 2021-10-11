@@ -1,0 +1,13 @@
+# Save Telemetry To Database
+
+To make the telemetry data easier to use, it makes sense to load it into a database rather than have to search through various files and repeatedly clean the data.
+
+This section describes a recipe for processing rich telemetry datafiles that have been saved into single directory.
+
+The filename includes metadata that is mixed into the data saved to the database.
+
+```{r}
+# Load in a single file and clean the data
+
+
+```
