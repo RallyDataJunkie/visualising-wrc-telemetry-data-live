@@ -188,7 +188,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 <li class="chapter" data-level="8" data-path="finding-the-time-to-complete-a-particular-stretch.html"><a href="finding-the-time-to-complete-a-particular-stretch.html"><i class="fa fa-check"></i><b>8</b> Finding the Time to Complete a Particular Stretch</a></li>
 <li class="chapter" data-level="9" data-path="estimating-time-deltas-between-drivers-over-small-sections.html"><a href="estimating-time-deltas-between-drivers-over-small-sections.html"><i class="fa fa-check"></i><b>9</b> Estimating Time Deltas Between Drivers Over Small Sections</a></li>
-<li class="chapter" data-level="10" data-path="interpolation-using-a-speed-model.html"><a href="interpolation-using-a-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Speed Model</a></li>
+<li class="chapter" data-level="10" data-path="interpolation-using-a-route-speed-model.html"><a href="interpolation-using-a-route-speed-model.html"><i class="fa fa-check"></i><b>10</b> Interpolation Using A Route Speed Model</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="interpolation-using-a-route-speed-model.html"><a href="interpolation-using-a-route-speed-model.html#creating-a-route-speed-model"><i class="fa fa-check"></i><b>10.1</b> Creating a Route Speed Model</a></li>
+</ul></li>
 <li class="chapter" data-level="11" data-path="full-telemetry.html"><a href="full-telemetry.html"><i class="fa fa-check"></i><b>11</b> Full telemetry</a></li>
 <li class="chapter" data-level="12" data-path="generating-a-trajr-route-from-the-telemetry-data.html"><a href="generating-a-trajr-route-from-the-telemetry-data.html"><i class="fa fa-check"></i><b>12</b> Generating a <code>trajr</code> Route From the Telemetry Data</a></li>
 <li class="chapter" data-level="13" data-path="finding-distance-into-a-common-route.html"><a href="finding-distance-into-a-common-route.html"><i class="fa fa-check"></i><b>13</b> Finding Distance into a Common Route</a></li>
@@ -197,6 +200,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="14.1" data-path="looking-at-braking-behaviour.html"><a href="looking-at-braking-behaviour.html#throttle-comparison"><i class="fa fa-check"></i><b>14.1</b> Throttle Comparison</a></li>
 </ul></li>
 <li class="chapter" data-level="15" data-path="comparing-times-into-stage.html"><a href="comparing-times-into-stage.html"><i class="fa fa-check"></i><b>15</b> Comparing Times Into Stage</a></li>
+<li class="chapter" data-level="16" data-path="correlating-telemetry-traces.html"><a href="correlating-telemetry-traces.html"><i class="fa fa-check"></i><b>16</b> Correlating Telemetry Traces</a></li>
+<li class="chapter" data-level="17" data-path="validating-the-speed-model.html"><a href="validating-the-speed-model.html"><i class="fa fa-check"></i><b>17</b> Validating the Speed Model</a></li>
+<li class="chapter" data-level="18" data-path="smoothing-a-route.html"><a href="smoothing-a-route.html"><i class="fa fa-check"></i><b>18</b> Smoothing a Route</a></li>
 <li class="divider"></li>
 <li><a href="https://rallydatajunkie.com/"><em>RallyDataJunkie.com</em></a></li>
 
@@ -222,22 +228,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>To provide for an exact comparison of times based on distance into stage, we can map distances onto the “official” route.</p>
 <p>However, if the official route does not match the actual route, we may get a “false” distance measures. For example, if the “official” route starts some way along the actual route as recorded in telemetry, then we will lose information at the start of the route.</p>
 <p>Another approach might be to generate out own unofficial official route by creating a small buffer around the intersection of the captured route telemetry and then looking up roads using OSM within that buffered area; such a road should be unique (assuming that the stage route follows tracks that appear on OpenStreetMap) and could then be used as the official route.</p>
-<div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb77-1"><a href="finding-distance-into-a-common-route.html#cb77-1" aria-hidden="true" tabindex="-1"></a>dist_into_route <span class="ot">=</span> <span class="cf">function</span>(trj_utm, stage_route_utm) {</span>
-<span id="cb77-2"><a href="finding-distance-into-a-common-route.html#cb77-2" aria-hidden="true" tabindex="-1"></a>   <span class="co"># telem_df_full_utm =  st_transform(telem_df_full,</span></span>
-<span id="cb77-3"><a href="finding-distance-into-a-common-route.html#cb77-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#                         crs = st_crs(utm_proj4_string))</span></span>
-<span id="cb77-4"><a href="finding-distance-into-a-common-route.html#cb77-4" aria-hidden="true" tabindex="-1"></a>  full_pois_utm <span class="ot">=</span> <span class="fu">st_sfc</span>(<span class="fu">st_multipoint</span>(<span class="fu">st_coordinates</span>(trj_utm)),</span>
-<span id="cb77-5"><a href="finding-distance-into-a-common-route.html#cb77-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">crs=</span><span class="fu">st_crs</span>(trj_utm))</span>
-<span id="cb77-6"><a href="finding-distance-into-a-common-route.html#cb77-6" aria-hidden="true" tabindex="-1"></a>  full_pois_points_utm <span class="ot">=</span> <span class="fu">st_cast</span>(<span class="at">x =</span> full_pois_utm, <span class="at">to =</span> <span class="st">&quot;POINT&quot;</span>)</span>
-<span id="cb77-7"><a href="finding-distance-into-a-common-route.html#cb77-7" aria-hidden="true" tabindex="-1"></a>  full_pois_points_utm_sp <span class="ot">=</span> <span class="fu">as</span>(full_pois_points_utm, <span class="st">&#39;Spatial&#39;</span>)</span>
-<span id="cb77-8"><a href="finding-distance-into-a-common-route.html#cb77-8" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-9"><a href="finding-distance-into-a-common-route.html#cb77-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the distance along the route of the point on the route</span></span>
-<span id="cb77-10"><a href="finding-distance-into-a-common-route.html#cb77-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nearest to each telemetry sample</span></span>
-<span id="cb77-11"><a href="finding-distance-into-a-common-route.html#cb77-11" aria-hidden="true" tabindex="-1"></a>  rgeos<span class="sc">::</span><span class="fu">gProject</span>(<span class="fu">as</span>(stage_route_utm,<span class="st">&quot;Spatial&quot;</span>),</span>
-<span id="cb77-12"><a href="finding-distance-into-a-common-route.html#cb77-12" aria-hidden="true" tabindex="-1"></a>                  full_pois_points_utm_sp,  <span class="at">normalized =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb77-13"><a href="finding-distance-into-a-common-route.html#cb77-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb77-14"><a href="finding-distance-into-a-common-route.html#cb77-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-15"><a href="finding-distance-into-a-common-route.html#cb77-15" aria-hidden="true" tabindex="-1"></a>trj_evans<span class="sc">$</span>dist_into_route <span class="ot">=</span> <span class="fu">dist_into_route</span>(trj_evans, stage_route_utm)</span>
-<span id="cb77-16"><a href="finding-distance-into-a-common-route.html#cb77-16" aria-hidden="true" tabindex="-1"></a>trj_ogier<span class="sc">$</span>dist_into_route <span class="ot">=</span> <span class="fu">dist_into_route</span>(trj_ogier, stage_route_utm)</span></code></pre></div>
+<div class="sourceCode" id="cb95"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb95-1"><a href="finding-distance-into-a-common-route.html#cb95-1" aria-hidden="true" tabindex="-1"></a>dist_into_route <span class="ot">=</span> <span class="cf">function</span>(trj_utm, stage_route_utm) {</span>
+<span id="cb95-2"><a href="finding-distance-into-a-common-route.html#cb95-2" aria-hidden="true" tabindex="-1"></a>   <span class="co"># telem_df_full_utm =  st_transform(telem_df_full,</span></span>
+<span id="cb95-3"><a href="finding-distance-into-a-common-route.html#cb95-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#                         crs = st_crs(utm_proj4_string))</span></span>
+<span id="cb95-4"><a href="finding-distance-into-a-common-route.html#cb95-4" aria-hidden="true" tabindex="-1"></a>  full_pois_utm <span class="ot">=</span> <span class="fu">st_sfc</span>(<span class="fu">st_multipoint</span>(<span class="fu">st_coordinates</span>(trj_utm)),</span>
+<span id="cb95-5"><a href="finding-distance-into-a-common-route.html#cb95-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">crs=</span><span class="fu">st_crs</span>(trj_utm))</span>
+<span id="cb95-6"><a href="finding-distance-into-a-common-route.html#cb95-6" aria-hidden="true" tabindex="-1"></a>  full_pois_points_utm <span class="ot">=</span> <span class="fu">st_cast</span>(<span class="at">x =</span> full_pois_utm, <span class="at">to =</span> <span class="st">&quot;POINT&quot;</span>)</span>
+<span id="cb95-7"><a href="finding-distance-into-a-common-route.html#cb95-7" aria-hidden="true" tabindex="-1"></a>  full_pois_points_utm_sp <span class="ot">=</span> <span class="fu">as</span>(full_pois_points_utm, <span class="st">&#39;Spatial&#39;</span>)</span>
+<span id="cb95-8"><a href="finding-distance-into-a-common-route.html#cb95-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb95-9"><a href="finding-distance-into-a-common-route.html#cb95-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the distance along the route of the point on the route</span></span>
+<span id="cb95-10"><a href="finding-distance-into-a-common-route.html#cb95-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nearest to each telemetry sample</span></span>
+<span id="cb95-11"><a href="finding-distance-into-a-common-route.html#cb95-11" aria-hidden="true" tabindex="-1"></a>  rgeos<span class="sc">::</span><span class="fu">gProject</span>(<span class="fu">as</span>(stage_route_utm,<span class="st">&quot;Spatial&quot;</span>),</span>
+<span id="cb95-12"><a href="finding-distance-into-a-common-route.html#cb95-12" aria-hidden="true" tabindex="-1"></a>                  full_pois_points_utm_sp,  <span class="at">normalized =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb95-13"><a href="finding-distance-into-a-common-route.html#cb95-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb95-14"><a href="finding-distance-into-a-common-route.html#cb95-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-15"><a href="finding-distance-into-a-common-route.html#cb95-15" aria-hidden="true" tabindex="-1"></a>trj_evans<span class="sc">$</span>dist_into_route <span class="ot">=</span> <span class="fu">dist_into_route</span>(trj_evans, stage_route_utm)</span>
+<span id="cb95-16"><a href="finding-distance-into-a-common-route.html#cb95-16" aria-hidden="true" tabindex="-1"></a>trj_ogier<span class="sc">$</span>dist_into_route <span class="ot">=</span> <span class="fu">dist_into_route</span>(trj_ogier, stage_route_utm)</span></code></pre></div>
 <p>Another approach would be simple to project one driver’s route onto the route taken by a driver we are comparing them against and then finding times based distance into this common route projection.</p>
 </div>
             </section>

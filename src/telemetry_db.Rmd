@@ -1,3 +1,8 @@
+```{r}
+library(stringi)
+library(RSQLite)
+```
+
 # Save Telemetry To Database
 
 To make the telemetry data easier to use, it makes sense to load it into a database rather than have to search through various files and repeatedly clean the data.
@@ -6,8 +11,40 @@ This section describes a recipe for processing rich telemetry datafiles that hav
 
 The filename includes metadata that is mixed into the data saved to the database.
 
-```{r}
-# Load in a single file and clean the data
 
+# Bulk Process
 
+It will be convenient to be able to dump all the telemetry into a database. The following recipe will load all the complete telemetry files in a directory into a SQLite database.
+
+```{r warning=FALSE, message=FALSE}
+# This may take some time...
+process_file = function(fn) {
+  # Load file and process data
+  trj_driver_ = telemetry_full_trajectory(get_full_telem(file.path(path, fn)))
+  #trj_driver_$dist_into_route = dist_into_route(trj_driver_, stage_route_utm)
+  
+  # Add to SQLite db
+  dbWriteTable(con, "full_telem2",
+             as.data.frame(trj_driver_) %>% 
+                  select(-geometry, -polar, -displacement),
+               append=TRUE, row.names = FALSE)
+  return
+}
+
+# Open SQLite connection
+library(RSQLite)
+
+db_name = "telem_full_test.db"
+# Delete existing database
+unlink(db_name) 
+
+# Create database
+con = dbConnect(RSQLite::SQLite(), db_name)
+
+# Files to process
+full_telem_files = list.files(path, pattern=".*telemetrymergeddata.*")
+#full_telem_files = head(full_telem_files, 3)
+
+# Process files
+tmp = full_telem_files %>% map(process_file)
 ```

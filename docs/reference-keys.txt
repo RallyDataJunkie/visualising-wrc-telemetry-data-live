@@ -25,10 +25,14 @@ creating-a-common-false-time-origin
 visual-driver-comparison
 finding-the-time-to-complete-a-particular-stretch
 estimating-time-deltas-between-drivers-over-small-sections
-interpolation-using-a-speed-model
+interpolation-using-a-route-speed-model
+creating-a-route-speed-model
 full-telemetry
 generating-a-trajr-route-from-the-telemetry-data
 finding-distance-into-a-common-route
 looking-at-braking-behaviour
 throttle-comparison
 comparing-times-into-stage
+correlating-telemetry-traces
+validating-the-speed-model
+smoothing-a-route

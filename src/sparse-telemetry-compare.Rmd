@@ -335,7 +335,7 @@ We can also split the co-ordinates out from the geometry using a recipe such as:
 #           long = unlist(map(geometry,2)))
 ```
 
-# Interpolation Using A Speed Model
+# Interpolation Using A Route Speed Model
 
 Based on the curvature of the route, the speed model gives us a crude estimate of how long it takes to get between two points. If the route is a flat straight between the points, we'll travel 1km in much less time than if the route it tight and twisty.
 
@@ -360,4 +360,217 @@ The simple `approxfun()` interpolator uses a linear model to interpolate times b
 - get interpolated normalised model time between points, desired_nt = (desired_mt - in_mt)/(out_mt - in_mt)
 - get predicted time desired_t = desired_nt*(out_t - in_t) + in_t
 
-TO DO
+
+## Creating a Route Speed Model
+
+In the *To See The Invisible* rally pacenotes tutorial series by David Nafría, corners are given a particular severity based on curvature. Simple models of expected speeds for corners of a particular severity are also described for different classes of rally car.
+
+We can use this approach to create a simple speed model based on curvature of the rally route. Using the expected cornering speed as a target speed and a simple acceleration model, as well as theoretical maximum speed, we can accelerate the car into and out of each corner based and generate a speed model as a result.
+
+The `rLFT` processing linear features *R* package provides a handy tool for modeling curvature along each point of a route in the form of a *boundary convexity tool* (`bct()`). The curvature of a moving segment along the route is determined, along with the center of curvature and a convexity measure.
+
+```{r}
+library(rLFT)
+
+# The step dist is how far we move the window at each step
+stepdist = 10
+# The window is the length of the route for which we find the curvature
+window = 20
+get_route_convexity = function(route_basis_utm){
+  bct(route_basis_utm,
+      # distance between measurements 
+      step = stepdist,
+      window = window, ridName = "name") %>%
+  mutate(dist =  (lead(MidMeas)-MidMeas),
+         cum_dist = cumsum(dist))
+}
+
+route_convexity = get_route_convexity(stage_route_utm)
+
+head(route_convexity, 3)
+```
+
+Although the boundary convexity tool gives us a convexity measure, we can also create our own curvature metric that corresponds more closely to Nafría's model. I don't know how to write vectorised functions properly, so I'll create a simple function that generates the curvature at a particular point on a route, and then use the `Vectorize()` helper function to as-if vectorise it for me.
+
+```{r message=FALSE, warning=FALSE}
+library(devtools)
+# The curvature function takes an arc defined over
+# x and y coordinate lists
+
+#circlefit, from pracma::
+circlefit = function (xp, yp, fast = TRUE) 
+{
+    if (!is.vector(xp, mode = "numeric") || !is.vector(yp, mode = "numeric")) 
+        stop("Arguments 'xp' and 'yp' must be numeric vectors.")
+    if (length(xp) != length(yp)) 
+        stop("Vectors 'xp' and 'yp' must be of the same length.")
+    if (!fast) 
+        warning("Option 'fast' is deprecated and will not be used!", 
+            call. = FALSE, immediate. = TRUE)
+    n <- length(xp)
+    p <- qr.solve(cbind(xp, yp, 1), matrix(xp^2 + yp^2, ncol = 1))
+    v <- c(p[1]/2, p[2]/2, sqrt((p[1]^2 + p[2]^2)/4 + p[3]))
+    rms <- sqrt(sum((sqrt((xp - v[1])^2 + (yp - v[2])^2) - v[3])^2)/n)
+    #cat("RMS error:", rms, "\n")
+    return(v)
+}
+
+curvature = function(x,y){
+  #729181.8, 729186.1, 729190.4
+  #4957667 , 4957676, 4957685
+  tryCatch({
+      # circlefit gives an error if we pass a straight line
+      # Also hide the print statement in circlefit
+      # circlefit() returns the x and y coords of the circle center
+      # as well as the radius of curvature
+      # We could then also calculate the angle and arc length
+      circlefit(x,y)[3]
+    },
+    error = function(err) { 
+      # For a straight, return the first co-ord and Inf diameter
+      # Alternatively, pass zero diameter?
+      c(x[1], y[1], Inf)[3]})
+}
+
+curvature2 = function(x1, x2, x3, y1, y2, y3){
+  curvature(c(x1, x2, x3), c(y1, y2, y3))
+}
+
+# The base::Vectorize function provides a lazy way of 
+# vectorising a non-vectorised function
+curvatures = Vectorize(curvature2)
+```
+
+
+This model uses the corner centre measures calculated by the boundary convexity tool to return a radius for the curvature of each segment:
+
+```{r}
+route_convexity$radius = curvatures(lag(route_convexity$Midpoint_X), 
+                                    route_convexity$Midpoint_X,
+                                    lead(route_convexity$Midpoint_X),
+                                    lag(route_convexity$Midpoint_Y),
+                                    route_convexity$Midpoint_Y,
+                                    lead(route_convexity$Midpoint_Y)
+                                    )
+```
+
+We can now generate the cornering speed model. The corner speed model generates several things:
+
+- a corner index, `invisble_ci`, which is an integer representing the corner radius;
+- a notional segment/corner target speed, `invisible_sp`.
+
+```{r}
+corner_speed_model = function(route_convexity){
+  invisible_bins = c(0, 10, 15, 20, 27.5, 35,
+                    45, 60, 77.5, 100, 175, Inf)
+
+  route_convexity$invisible_ci = cut(route_convexity$radius,
+                                     breaks = invisible_bins,
+                                     labels = 1:(length(invisible_bins)-1),
+                                     ordered_result=TRUE)
+  
+  # Speeds in km/h
+  invisible_speeds = c(10, 40, 50, 60, 70, 80,
+                       95, 110, 120, 130, 145)
+  
+  
+  route_convexity$invisible_sp = cut(route_convexity$radius,
+                                     breaks = invisible_bins,
+                                     labels = invisible_speeds,
+                                     ordered_result=TRUE)
+  
+  # Cast speed as factor, via character, to integer
+  route_convexity$invisible_sp = as.integer(as.character(route_convexity$invisible_sp))
+  
+  route_convexity
+}
+
+```
+
+Applying the speed model to our route gives us a corner index and notional target speed for each segment:
+
+```{r}
+route_convexity = route_convexity %>% corner_speed_model()
+
+head(route_convexity, 3)
+```
+
+We can build up the speed model for the route. At each step we accelerate towards the nominal sector target speed (the `invisible_sp` value). We can't accelerate infinitely fast, so our actual target accumulated speed for the segment, `acc_sp`, is a simple function of the current speed and the notional target speed. We can then calculate the notional time to complete that segment, `invisible_time`.
+
+```{r}
+acceleration_model = function(route_convexity, stepdist=10){
+  # Acceleration model
+  sp = route_convexity$invisible_sp
+  # Nominal starting target speed
+  # In we don't set this, we don't get started moving
+  sp[1] = 30 
+  
+  # Crude acceleration / brake weights
+  acc = 1
+  dec = 1
+  for (i in 2:(length(sp)-1)) {
+    # Simple linear model - accumulated speed is based on
+    # the current speed and the notional segment speed
+    # Accelerate up
+    if (sp[i-1]<=sp[i]) sp[i] = (sp[i-1] + acc * sp[i]) / (1+acc)
+                                    
+    # Decelerate down
+    if (sp[i]>sp[i+1]) sp[i] = (dec * sp[i] + sp[i+1]) / (1+dec)
+  }
+  
+  route_convexity$acc_sp = sp
+  route_convexity$acc_sp[length(sp)] = route_convexity$invisible_sp[length(sp)]
+  
+  # New time model
+  # Also get speed in m/s for time calculation
+  meters = 1000
+  seconds_per_hour = 3600 # 60 * 60
+  kph_unit = meters / seconds_per_hour
+  route_convexity = route_convexity %>% 
+                      mutate(segment_sp = route_convexity$acc_sp * kph_unit,
+                             invisible_time = dist/segment_sp,
+                             acc_time = cumsum(invisible_time))
+
+  
+  # So now we need to generate kilometer marks
+  route_convexity$kmsection = 1 + trunc(route_convexity$MidMeas/1000)
+  # We can use this to help find the time over each km
+  
+  route_convexity
+}
+```
+
+If we now apply the acceleration model to the route, we can calculate the speed over each segment, and the time taken to complete the segment:
+
+```{r}
+route_convexity = acceleration_model(route_convexity)
+
+head(route_convexity, 3)
+```
+
+Summing over the segment times (omitting the flying finish which has no specified ongoing segment length) gives us an estimated stage time
+
+```{r}
+anticipated_time = function(route_convexity) {
+  anticipated_time = sum(route_convexity$invisible_time[1:nrow(route_convexity)-1])
+  cat(paste0("Anticipated stage time: ", anticipated_time %/% 60,
+           'm ', round(anticipated_time %% 60, 1), 's' ))
+}
+
+anticipated_time(route_convexity)
+```
+
+We can also view the speed model over distance into stage:
+
+```{r message=FALSE, warning=FALSE}
+ggplot(route_convexity) + geom_line(aes(x=cum_dist, y=acc_sp))
+```
+
+We can also plot the time model into the stage as the accumulated time:
+
+```{r warning=FALSE, message=FALSE,}
+ggplot(route_convexity) + geom_line(aes(x=cum_dist, y=acc_time))
+```
+
+
+
