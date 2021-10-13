@@ -226,20 +226,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="correlating-telemetry-traces" class="section level1" number="16">
 <h1><span class="header-section-number">16</span> Correlating Telemetry Traces</h1>
 <p>We can use a cross-correlation function to try to identify the extent to which traces are similar across drivers</p>
-<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="correlating-telemetry-traces.html#cb114-1" aria-hidden="true" tabindex="-1"></a>ts_estimator <span class="ot">=</span> <span class="cf">function</span>(df, x, y, points){</span>
-<span id="cb114-2"><a href="correlating-telemetry-traces.html#cb114-2" aria-hidden="true" tabindex="-1"></a>  estimator_ <span class="ot">=</span> <span class="fu">approxfun</span>(df[[x]], df[[y]])</span>
-<span id="cb114-3"><a href="correlating-telemetry-traces.html#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimator_</span>(points)</span>
-<span id="cb114-4"><a href="correlating-telemetry-traces.html#cb114-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb114-5"><a href="correlating-telemetry-traces.html#cb114-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb114-6"><a href="correlating-telemetry-traces.html#cb114-6" aria-hidden="true" tabindex="-1"></a>ogier_speed_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_ogier, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, segments)</span></code></pre></div>
+<div class="sourceCode" id="cb112"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb112-1"><a href="correlating-telemetry-traces.html#cb112-1" aria-hidden="true" tabindex="-1"></a>ts_estimator <span class="ot">=</span> <span class="cf">function</span>(df, x, y, points){</span>
+<span id="cb112-2"><a href="correlating-telemetry-traces.html#cb112-2" aria-hidden="true" tabindex="-1"></a>  estimator_ <span class="ot">=</span> <span class="fu">approxfun</span>(df[[x]], df[[y]])</span>
+<span id="cb112-3"><a href="correlating-telemetry-traces.html#cb112-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimator_</span>(points)</span>
+<span id="cb112-4"><a href="correlating-telemetry-traces.html#cb112-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb112-5"><a href="correlating-telemetry-traces.html#cb112-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb112-6"><a href="correlating-telemetry-traces.html#cb112-6" aria-hidden="true" tabindex="-1"></a>ogier_speed_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_ogier, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, segments)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb116"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb116-1"><a href="correlating-telemetry-traces.html#cb116-1" aria-hidden="true" tabindex="-1"></a>evans_speed_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_evans, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, segments)</span></code></pre></div>
+<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="correlating-telemetry-traces.html#cb114-1" aria-hidden="true" tabindex="-1"></a>evans_speed_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_evans, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, segments)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb118"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb118-1"><a href="correlating-telemetry-traces.html#cb118-1" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans <span class="ot">=</span>  <span class="fu">ccf</span>(ogier_speed_est, evans_speed_est)</span></code></pre></div>
+<div class="sourceCode" id="cb116"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb116-1"><a href="correlating-telemetry-traces.html#cb116-1" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans <span class="ot">=</span>  <span class="fu">ccf</span>(ogier_speed_est, evans_speed_est)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-57-1.png" width="672" /></p>
-<div class="sourceCode" id="cb119"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb119-1"><a href="correlating-telemetry-traces.html#cb119-1" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans</span></code></pre></div>
+<div class="sourceCode" id="cb117"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb117-1"><a href="correlating-telemetry-traces.html#cb117-1" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans</span></code></pre></div>
 <pre><code>## 
 ## Autocorrelations of series &#39;X&#39;, by lag
 ## 
@@ -252,22 +252,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##     14     15     16     17     18     19 
 ## -0.052 -0.009  0.088  0.073  0.125  0.087</code></pre>
 <p>We can report on the correlation at different lags by using the lag value as an index value:</p>
-<div class="sourceCode" id="cb121"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb121-1"><a href="correlating-telemetry-traces.html#cb121-1" aria-hidden="true" tabindex="-1"></a>lag <span class="ot">=</span> <span class="dv">0</span></span>
-<span id="cb121-2"><a href="correlating-telemetry-traces.html#cb121-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb121-3"><a href="correlating-telemetry-traces.html#cb121-3" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans[lag]</span></code></pre></div>
+<div class="sourceCode" id="cb119"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb119-1"><a href="correlating-telemetry-traces.html#cb119-1" aria-hidden="true" tabindex="-1"></a>lag <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb119-2"><a href="correlating-telemetry-traces.html#cb119-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-3"><a href="correlating-telemetry-traces.html#cb119-3" aria-hidden="true" tabindex="-1"></a>speed_correlation_ogier_evans[lag]</span></code></pre></div>
 <pre><code>## 
 ## Autocorrelations of series &#39;X&#39;, by lag
 ## 
 ##     0 
 ## 0.929</code></pre>
 <p>Brake cross-correlation:</p>
-<div class="sourceCode" id="cb123"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb123-1"><a href="correlating-telemetry-traces.html#cb123-1" aria-hidden="true" tabindex="-1"></a>ogier_brk_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_ogier, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;brk&quot;</span>, segments)</span></code></pre></div>
+<div class="sourceCode" id="cb121"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb121-1"><a href="correlating-telemetry-traces.html#cb121-1" aria-hidden="true" tabindex="-1"></a>ogier_brk_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_ogier, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;brk&quot;</span>, segments)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb125"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb125-1"><a href="correlating-telemetry-traces.html#cb125-1" aria-hidden="true" tabindex="-1"></a>evans_brk_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_evans, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;brk&quot;</span>, segments)</span></code></pre></div>
+<div class="sourceCode" id="cb123"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb123-1"><a href="correlating-telemetry-traces.html#cb123-1" aria-hidden="true" tabindex="-1"></a>evans_brk_est <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_evans, <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;brk&quot;</span>, segments)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb127"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb127-1"><a href="correlating-telemetry-traces.html#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ccf</span>(ogier_brk_est, evans_brk_est)</span></code></pre></div>
+<div class="sourceCode" id="cb125"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb125-1"><a href="correlating-telemetry-traces.html#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ccf</span>(ogier_brk_est, evans_brk_est)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-59-1.png" width="672" /></p>
 <p><em>It occurs to me that if we use a high resolution sample, for example at the level of 1m, we might be able to detect consistent areas where one driver brakes sooner than another. This may be hard to spot in rally telemetry, but it may be something observable in circuit races over many laps of the same circuit.</em></p>
 </div>

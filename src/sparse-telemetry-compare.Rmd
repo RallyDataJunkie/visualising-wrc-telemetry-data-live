@@ -367,9 +367,11 @@ In the *To See The Invisible* rally pacenotes tutorial series by David Nafría, 
 
 We can use this approach to create a simple speed model based on curvature of the rally route. Using the expected cornering speed as a target speed and a simple acceleration model, as well as theoretical maximum speed, we can accelerate the car into and out of each corner based and generate a speed model as a result.
 
+*For more on analysing and visualising rally stage routes, see [__Visualising WRC Rally Stages With rayshader and R__](https://rallydatajunkie.com/visualising-rally-stages/).*
+
 The `rLFT` processing linear features *R* package provides a handy tool for modeling curvature along each point of a route in the form of a *boundary convexity tool* (`bct()`). The curvature of a moving segment along the route is determined, along with the center of curvature and a convexity measure.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(rLFT)
 
 # The step dist is how far we move the window at each step
