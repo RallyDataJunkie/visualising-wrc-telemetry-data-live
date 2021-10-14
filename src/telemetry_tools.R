@@ -102,10 +102,13 @@ get_buffered_route = function(stage_route_utm, buffer_width=50,
   buffered_route
 }
 
-# Get interection of telemetry and buffered route
-get_route_telem = function(stage_route_utm, min_telem, min_telem_utm,
-                           buffer_width=50, buffered_route=FALSE){
-  
+# Get intersection of telemetry and buffered route
+# This assumes we pass in UTM data
+# If we don't specify the crs, we get the buffered UTM route back
+# If a crs parameter is passed, we convert to that CRS
+get_route_telem = function(stage_route_utm, min_telem_utm,
+                           buffer_width=50, buffered_route=FALSE,
+                           crs=NULL){
   if (!buffered_route) {
     buffered_route_utm = get_buffered_route(stage_route_utm, buffer_width)
   } else {
@@ -114,12 +117,17 @@ get_route_telem = function(stage_route_utm, min_telem, min_telem_utm,
   
   
   #Find the intersecting points
-  # Could add some logic to trasnform CRS is they mismatch?
+  # Could add some logic to transform CRS if they mismatch?
   route_telem_intersect = st_intersects(buffered_route_utm, min_telem_utm)
   
   # And then filter on those points
   # Also nullify the Z dimension
-  min_telem[route_telem_intersect[[1]],]  %>% st_zm()
+  min_telem_utm = min_telem_utm[route_telem_intersect[[1]],] %>% st_zm()
+  
+  if (!is.null(crs))
+    min_telem_utm %>% st_transform(crs = st_crs(crs))
+  else
+    min_telem_utm
 }
 
 

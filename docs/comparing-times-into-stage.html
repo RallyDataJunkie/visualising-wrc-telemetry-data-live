@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>15 Comparing Times Into Stage | Visualising WRC Telemetry Data</title>
+  <title>15 Comparing Times Into Stage | Visualising WRC Telemetry Data With R</title>
   <meta name="description" content="Analysing WRC telemetry data." />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data With R" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="15 Comparing Times Into Stage | Visualising WRC Telemetry Data With R" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -32,8 +32,9 @@
   
 <link rel="prev" href="looking-at-braking-behaviour.html"/>
 <link rel="next" href="correlating-telemetry-traces.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -49,10 +50,11 @@
 
 
 
-
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <script src="libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
-<script src="libs/htmlwidgets-1.5.3.9000/htmlwidgets.js"></script>
+<script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
 <link href="libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
@@ -130,6 +132,7 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
+
 
 </head>
 
@@ -215,7 +218,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data With R</a>
           </h1>
         </div>
 
@@ -228,35 +231,35 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>How do our drivers compare based on the time it takes them to driver a particular distance into the stage?</p>
 <p><em>Recall that we are using each car’s own accumulated distance in to stage measure, rather than comparing times at distances into stage measured along some common, idealised route.</em></p>
 <p>Sample common points to find the difference:</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb106-1"><a href="comparing-times-into-stage.html#cb106-1" aria-hidden="true" tabindex="-1"></a>segment_length<span class="ot">=</span><span class="dv">100</span></span>
-<span id="cb106-2"><a href="comparing-times-into-stage.html#cb106-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb106-3"><a href="comparing-times-into-stage.html#cb106-3" aria-hidden="true" tabindex="-1"></a><span class="co"># stage_length set in earlier section</span></span>
-<span id="cb106-4"><a href="comparing-times-into-stage.html#cb106-4" aria-hidden="true" tabindex="-1"></a>segments <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from=</span><span class="dv">0</span>, <span class="at">to=</span>stage_length, <span class="at">by =</span> segment_length)</span>
-<span id="cb106-5"><a href="comparing-times-into-stage.html#cb106-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb106-6"><a href="comparing-times-into-stage.html#cb106-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb106-7"><a href="comparing-times-into-stage.html#cb106-7" aria-hidden="true" tabindex="-1"></a>ogier_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_ogier<span class="sc">$</span>cum_dist,</span>
-<span id="cb106-8"><a href="comparing-times-into-stage.html#cb106-8" aria-hidden="true" tabindex="-1"></a>                            trj_ogier<span class="sc">$</span>displacementTime)</span></code></pre></div>
+<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="comparing-times-into-stage.html#cb109-1" aria-hidden="true" tabindex="-1"></a>segment_length<span class="ot">=</span><span class="dv">100</span></span>
+<span id="cb109-2"><a href="comparing-times-into-stage.html#cb109-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-3"><a href="comparing-times-into-stage.html#cb109-3" aria-hidden="true" tabindex="-1"></a><span class="co"># stage_length set in earlier section</span></span>
+<span id="cb109-4"><a href="comparing-times-into-stage.html#cb109-4" aria-hidden="true" tabindex="-1"></a>segments <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from=</span><span class="dv">0</span>, <span class="at">to=</span>stage_length, <span class="at">by =</span> segment_length)</span>
+<span id="cb109-5"><a href="comparing-times-into-stage.html#cb109-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-6"><a href="comparing-times-into-stage.html#cb109-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-7"><a href="comparing-times-into-stage.html#cb109-7" aria-hidden="true" tabindex="-1"></a>ogier_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_ogier<span class="sc">$</span>cum_dist,</span>
+<span id="cb109-8"><a href="comparing-times-into-stage.html#cb109-8" aria-hidden="true" tabindex="-1"></a>                            trj_ogier<span class="sc">$</span>displacementTime)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb108"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb108-1"><a href="comparing-times-into-stage.html#cb108-1" aria-hidden="true" tabindex="-1"></a>evans_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_evans<span class="sc">$</span>cum_dist,</span>
-<span id="cb108-2"><a href="comparing-times-into-stage.html#cb108-2" aria-hidden="true" tabindex="-1"></a>                           trj_evans<span class="sc">$</span>displacementTime)</span></code></pre></div>
+<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="comparing-times-into-stage.html#cb111-1" aria-hidden="true" tabindex="-1"></a>evans_full_estimator <span class="ot">=</span> <span class="fu">approxfun</span>(trj_evans<span class="sc">$</span>cum_dist,</span>
+<span id="cb111-2"><a href="comparing-times-into-stage.html#cb111-2" aria-hidden="true" tabindex="-1"></a>                           trj_evans<span class="sc">$</span>displacementTime)</span></code></pre></div>
 <pre><code>## Warning in regularize.values(x, y, ties, missing(ties), na.rm = na.rm):
 ## collapsing to unique &#39;x&#39; values</code></pre>
-<div class="sourceCode" id="cb110"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb110-1"><a href="comparing-times-into-stage.html#cb110-1" aria-hidden="true" tabindex="-1"></a>ogier_time_points <span class="ot">=</span> <span class="fu">ogier_full_estimator</span>(segments)</span>
-<span id="cb110-2"><a href="comparing-times-into-stage.html#cb110-2" aria-hidden="true" tabindex="-1"></a>evans_time_points <span class="ot">=</span> <span class="fu">evans_full_estimator</span>(segments)</span>
-<span id="cb110-3"><a href="comparing-times-into-stage.html#cb110-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb110-4"><a href="comparing-times-into-stage.html#cb110-4" aria-hidden="true" tabindex="-1"></a>ogier_evans_point_delta <span class="ot">=</span> ogier_time_points <span class="sc">-</span> evans_time_points</span>
-<span id="cb110-5"><a href="comparing-times-into-stage.html#cb110-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb110-6"><a href="comparing-times-into-stage.html#cb110-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference in time take to reach a particular point in the stage</span></span>
-<span id="cb110-7"><a href="comparing-times-into-stage.html#cb110-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>()<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>segments, <span class="at">y=</span>ogier_evans_point_delta))</span></code></pre></div>
-<p><img src="images/unnamed-chunk-55-1.png" width="672" /></p>
+<div class="sourceCode" id="cb113"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb113-1"><a href="comparing-times-into-stage.html#cb113-1" aria-hidden="true" tabindex="-1"></a>ogier_time_points <span class="ot">=</span> <span class="fu">ogier_full_estimator</span>(segments)</span>
+<span id="cb113-2"><a href="comparing-times-into-stage.html#cb113-2" aria-hidden="true" tabindex="-1"></a>evans_time_points <span class="ot">=</span> <span class="fu">evans_full_estimator</span>(segments)</span>
+<span id="cb113-3"><a href="comparing-times-into-stage.html#cb113-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb113-4"><a href="comparing-times-into-stage.html#cb113-4" aria-hidden="true" tabindex="-1"></a>ogier_evans_point_delta <span class="ot">=</span> ogier_time_points <span class="sc">-</span> evans_time_points</span>
+<span id="cb113-5"><a href="comparing-times-into-stage.html#cb113-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb113-6"><a href="comparing-times-into-stage.html#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference in time take to reach a particular point in the stage</span></span>
+<span id="cb113-7"><a href="comparing-times-into-stage.html#cb113-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>()<span class="sc">+</span><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x=</span>segments, <span class="at">y=</span>ogier_evans_point_delta))</span></code></pre></div>
+<p><img src="images/unnamed-chunk-57-1.png" width="672" /></p>
 <p>Compare time into stage for a given distance into stage. Note that this is the distance into the stage as calculated from the trajectory, rather than by comparison of distances into the same (idealised) route.</p>
-<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="comparing-times-into-stage.html#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb111-2"><a href="comparing-times-into-stage.html#cb111-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
-<span id="cb111-3"><a href="comparing-times-into-stage.html#cb111-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>) <span class="sc">+</span></span>
-<span id="cb111-4"><a href="comparing-times-into-stage.html#cb111-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
-<span id="cb111-5"><a href="comparing-times-into-stage.html#cb111-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;grey&#39;</span>) </span></code></pre></div>
-<p><img src="images/unnamed-chunk-56-1.png" width="672" /></p>
+<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="comparing-times-into-stage.html#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb114-2"><a href="comparing-times-into-stage.html#cb114-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
+<span id="cb114-3"><a href="comparing-times-into-stage.html#cb114-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb114-4"><a href="comparing-times-into-stage.html#cb114-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">dt=</span><span class="fu">as.double</span>(displacementTime)) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(dt <span class="sc">&gt;=</span><span class="dv">0</span>)),</span>
+<span id="cb114-5"><a href="comparing-times-into-stage.html#cb114-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>dt), <span class="at">color=</span><span class="st">&#39;grey&#39;</span>) </span></code></pre></div>
+<p><img src="images/unnamed-chunk-58-1.png" width="672" /></p>
 </div>
             </section>
 
@@ -268,7 +271,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -287,6 +289,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": {}
 },
 "fontsettings": {
@@ -304,6 +307,10 @@ gitbook.start({
 "text": null
 },
 "download": null,
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "section",
 "scroll_highlight": true
@@ -312,7 +319,6 @@ gitbook.start({
 "toolbar": {
 "position": "fixed"
 },
-"search": true,
 "info": true
 });
 });

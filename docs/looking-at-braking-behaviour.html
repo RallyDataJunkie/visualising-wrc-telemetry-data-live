@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>14 Looking At Braking Behaviour | Visualising WRC Telemetry Data</title>
+  <title>14 Looking At Braking Behaviour | Visualising WRC Telemetry Data With R</title>
   <meta name="description" content="Analysing WRC telemetry data." />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="14 Looking At Braking Behaviour | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="14 Looking At Braking Behaviour | Visualising WRC Telemetry Data With R" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="14 Looking At Braking Behaviour | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="14 Looking At Braking Behaviour | Visualising WRC Telemetry Data With R" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -32,8 +32,9 @@
   
 <link rel="prev" href="finding-distance-into-a-common-route.html"/>
 <link rel="next" href="comparing-times-into-stage.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -49,10 +50,11 @@
 
 
 
-
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <script src="libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
-<script src="libs/htmlwidgets-1.5.3.9000/htmlwidgets.js"></script>
+<script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
 <link href="libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
@@ -130,6 +132,7 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
+
 
 </head>
 
@@ -215,7 +218,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data With R</a>
           </h1>
         </div>
 
@@ -226,121 +229,121 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div id="looking-at-braking-behaviour" class="section level1" number="14">
 <h1><span class="header-section-number">14</span> Looking At Braking Behaviour</h1>
 <p>Where do we brake?</p>
-<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb94-1"><a href="looking-at-braking-behaviour.html#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co">#library(ggspatial)</span></span>
-<span id="cb94-2"><a href="looking-at-braking-behaviour.html#cb94-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  annotation_spatial(trj_ogier ) +</span></span>
-<span id="cb94-3"><a href="looking-at-braking-behaviour.html#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  layer_spatial(trj_ogier, aes(alpha = brk), color=&#39;red&#39;,size=0.3) </span></span>
-<span id="cb94-4"><a href="looking-at-braking-behaviour.html#cb94-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb94-5"><a href="looking-at-braking-behaviour.html#cb94-5" aria-hidden="true" tabindex="-1"></a><span class="co">#https://github.com/eliocamp/ggnewscale</span></span>
-<span id="cb94-6"><a href="looking-at-braking-behaviour.html#cb94-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple color scales</span></span>
-<span id="cb94-7"><a href="looking-at-braking-behaviour.html#cb94-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ?doesn&#39;t work with geom_sf which overplots?</span></span>
-<span id="cb94-8"><a href="looking-at-braking-behaviour.html#cb94-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggnewscale)</span>
-<span id="cb94-9"><a href="looking-at-braking-behaviour.html#cb94-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> <span class="fu">stat_sf_coordinates</span>(<span class="fu">aes</span>( <span class="at">color=</span>throttle),<span class="at">size=</span><span class="fl">0.1</span>,</span>
-<span id="cb94-10"><a href="looking-at-braking-behaviour.html#cb94-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">&quot;point&quot;</span>,</span>
-<span id="cb94-11"><a href="looking-at-braking-behaviour.html#cb94-11" aria-hidden="true" tabindex="-1"></a> <span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(throttle<span class="sc">&gt;</span><span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb94-12"><a href="looking-at-braking-behaviour.html#cb94-12" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_color_gradient</span>(<span class="at">low =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
-<span id="cb94-13"><a href="looking-at-braking-behaviour.html#cb94-13" aria-hidden="true" tabindex="-1"></a> <span class="fu">new_scale_color</span>() <span class="sc">+</span> </span>
-<span id="cb94-14"><a href="looking-at-braking-behaviour.html#cb94-14" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_color_gradient</span>(<span class="at">low =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;red&quot;</span>)<span class="sc">+</span> <span class="fu">stat_sf_coordinates</span>( <span class="fu">aes</span>( <span class="at">color=</span>brk), <span class="at">size=</span><span class="fl">0.1</span>,</span>
-<span id="cb94-15"><a href="looking-at-braking-behaviour.html#cb94-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">&quot;point&quot;</span>,</span>
-<span id="cb94-16"><a href="looking-at-braking-behaviour.html#cb94-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(brk<span class="sc">&gt;</span><span class="dv">0</span>)</span>
-<span id="cb94-17"><a href="looking-at-braking-behaviour.html#cb94-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span> </span>
-<span id="cb94-18"><a href="looking-at-braking-behaviour.html#cb94-18" aria-hidden="true" tabindex="-1"></a><span class="co"># How do we get the correct projection</span></span>
-<span id="cb94-19"><a href="looking-at-braking-behaviour.html#cb94-19" aria-hidden="true" tabindex="-1"></a><span class="co">#_coord_map()</span></span>
-<span id="cb94-20"><a href="looking-at-braking-behaviour.html#cb94-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Already rectilinear...</span></span>
-<span id="cb94-21"><a href="looking-at-braking-behaviour.html#cb94-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_fixed</span>()</span></code></pre></div>
-<p><img src="images/unnamed-chunk-48-1.png" width="672" /></p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="looking-at-braking-behaviour.html#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="co">#library(ggspatial)</span></span>
+<span id="cb97-2"><a href="looking-at-braking-behaviour.html#cb97-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  annotation_spatial(trj_ogier ) +</span></span>
+<span id="cb97-3"><a href="looking-at-braking-behaviour.html#cb97-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  layer_spatial(trj_ogier, aes(alpha = brk), color=&#39;red&#39;,size=0.3) </span></span>
+<span id="cb97-4"><a href="looking-at-braking-behaviour.html#cb97-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-5"><a href="looking-at-braking-behaviour.html#cb97-5" aria-hidden="true" tabindex="-1"></a><span class="co">#https://github.com/eliocamp/ggnewscale</span></span>
+<span id="cb97-6"><a href="looking-at-braking-behaviour.html#cb97-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple color scales</span></span>
+<span id="cb97-7"><a href="looking-at-braking-behaviour.html#cb97-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ?doesn&#39;t work with geom_sf which overplots?</span></span>
+<span id="cb97-8"><a href="looking-at-braking-behaviour.html#cb97-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggnewscale)</span>
+<span id="cb97-9"><a href="looking-at-braking-behaviour.html#cb97-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> <span class="fu">stat_sf_coordinates</span>(<span class="fu">aes</span>( <span class="at">color=</span>throttle),<span class="at">size=</span><span class="fl">0.1</span>,</span>
+<span id="cb97-10"><a href="looking-at-braking-behaviour.html#cb97-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">&quot;point&quot;</span>,</span>
+<span id="cb97-11"><a href="looking-at-braking-behaviour.html#cb97-11" aria-hidden="true" tabindex="-1"></a> <span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(throttle<span class="sc">&gt;</span><span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb97-12"><a href="looking-at-braking-behaviour.html#cb97-12" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_color_gradient</span>(<span class="at">low =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
+<span id="cb97-13"><a href="looking-at-braking-behaviour.html#cb97-13" aria-hidden="true" tabindex="-1"></a> <span class="fu">new_scale_color</span>() <span class="sc">+</span> </span>
+<span id="cb97-14"><a href="looking-at-braking-behaviour.html#cb97-14" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_color_gradient</span>(<span class="at">low =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;red&quot;</span>)<span class="sc">+</span> <span class="fu">stat_sf_coordinates</span>( <span class="fu">aes</span>( <span class="at">color=</span>brk), <span class="at">size=</span><span class="fl">0.1</span>,</span>
+<span id="cb97-15"><a href="looking-at-braking-behaviour.html#cb97-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">&quot;point&quot;</span>,</span>
+<span id="cb97-16"><a href="looking-at-braking-behaviour.html#cb97-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(brk<span class="sc">&gt;</span><span class="dv">0</span>)</span>
+<span id="cb97-17"><a href="looking-at-braking-behaviour.html#cb97-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span> </span>
+<span id="cb97-18"><a href="looking-at-braking-behaviour.html#cb97-18" aria-hidden="true" tabindex="-1"></a><span class="co"># How do we get the correct projection</span></span>
+<span id="cb97-19"><a href="looking-at-braking-behaviour.html#cb97-19" aria-hidden="true" tabindex="-1"></a><span class="co">#_coord_map()</span></span>
+<span id="cb97-20"><a href="looking-at-braking-behaviour.html#cb97-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Already rectilinear...</span></span>
+<span id="cb97-21"><a href="looking-at-braking-behaviour.html#cb97-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_fixed</span>()</span></code></pre></div>
+<p><img src="images/unnamed-chunk-50-1.png" width="672" /></p>
 <div id="throttle-comparison" class="section level2" number="14.1">
 <h2><span class="header-section-number">14.1</span> Throttle Comparison</h2>
 <p>How do our two drivers compare in their use of the throttle?</p>
-<div class="sourceCode" id="cb95"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb95-1"><a href="looking-at-braking-behaviour.html#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb95-2"><a href="looking-at-braking-behaviour.html#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>)),</span>
-<span id="cb95-3"><a href="looking-at-braking-behaviour.html#cb95-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle), <span class="at">color=</span><span class="st">&#39;red&#39;</span>) <span class="sc">+</span></span>
-<span id="cb95-4"><a href="looking-at-braking-behaviour.html#cb95-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>)),</span>
-<span id="cb95-5"><a href="looking-at-braking-behaviour.html#cb95-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>)</span></code></pre></div>
-<p><img src="images/unnamed-chunk-49-1.png" width="672" /></p>
+<div class="sourceCode" id="cb98"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb98-1"><a href="looking-at-braking-behaviour.html#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb98-2"><a href="looking-at-braking-behaviour.html#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>)),</span>
+<span id="cb98-3"><a href="looking-at-braking-behaviour.html#cb98-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle), <span class="at">color=</span><span class="st">&#39;red&#39;</span>) <span class="sc">+</span></span>
+<span id="cb98-4"><a href="looking-at-braking-behaviour.html#cb98-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>)),</span>
+<span id="cb98-5"><a href="looking-at-braking-behaviour.html#cb98-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>)</span></code></pre></div>
+<p><img src="images/unnamed-chunk-51-1.png" width="672" /></p>
 <p>With smoothing:</p>
-<div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="looking-at-braking-behaviour.html#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span></code></pre></div>
+<div class="sourceCode" id="cb99"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb99-1"><a href="looking-at-braking-behaviour.html#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span></code></pre></div>
 <pre><code>## 
 ## Attaching package: &#39;zoo&#39;</code></pre>
 <pre><code>## The following objects are masked from &#39;package:base&#39;:
 ## 
 ##     as.Date, as.Date.numeric</code></pre>
-<div class="sourceCode" id="cb99"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb99-1"><a href="looking-at-braking-behaviour.html#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb99-2"><a href="looking-at-braking-behaviour.html#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier<span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb99-3"><a href="looking-at-braking-behaviour.html#cb99-3" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">mutate</span>(<span class="at">smooth_throttle=</span><span class="fu">rollmean</span>(throttle, <span class="at">k =</span> <span class="dv">3</span>, <span class="at">fill =</span> <span class="cn">NA</span>)),</span>
-<span id="cb99-4"><a href="looking-at-braking-behaviour.html#cb99-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>smooth_throttle), <span class="at">color=</span><span class="st">&#39;red&#39;</span>) <span class="sc">+</span></span>
-<span id="cb99-5"><a href="looking-at-braking-behaviour.html#cb99-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb99-6"><a href="looking-at-braking-behaviour.html#cb99-6" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">mutate</span>(<span class="at">smooth_throttle=</span><span class="fu">rollmean</span>(throttle, <span class="at">k =</span> <span class="dv">3</span>, <span class="at">fill =</span> <span class="cn">NA</span>))),</span>
-<span id="cb99-7"><a href="looking-at-braking-behaviour.html#cb99-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>smooth_throttle), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb102"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb102-1"><a href="looking-at-braking-behaviour.html#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb102-2"><a href="looking-at-braking-behaviour.html#cb102-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier<span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb102-3"><a href="looking-at-braking-behaviour.html#cb102-3" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">mutate</span>(<span class="at">smooth_throttle=</span><span class="fu">rollmean</span>(throttle, <span class="at">k =</span> <span class="dv">3</span>, <span class="at">fill =</span> <span class="cn">NA</span>)),</span>
+<span id="cb102-4"><a href="looking-at-braking-behaviour.html#cb102-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>smooth_throttle), <span class="at">color=</span><span class="st">&#39;red&#39;</span>) <span class="sc">+</span></span>
+<span id="cb102-5"><a href="looking-at-braking-behaviour.html#cb102-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>(trj_evans <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb102-6"><a href="looking-at-braking-behaviour.html#cb102-6" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">mutate</span>(<span class="at">smooth_throttle=</span><span class="fu">rollmean</span>(throttle, <span class="at">k =</span> <span class="dv">3</span>, <span class="at">fill =</span> <span class="cn">NA</span>))),</span>
+<span id="cb102-7"><a href="looking-at-braking-behaviour.html#cb102-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>smooth_throttle), <span class="at">color=</span><span class="st">&#39;blue&#39;</span>)</span></code></pre></div>
 <pre><code>## Warning: Removed 2 row(s) containing missing values (geom_path).
 
 ## Warning: Removed 2 row(s) containing missing values (geom_path).</code></pre>
-<p><img src="images/unnamed-chunk-50-1.png" width="672" /></p>
+<p><img src="images/unnamed-chunk-52-1.png" width="672" /></p>
 <p>We can also explore adding throttle and brake data to the speed trace.</p>
-<div class="sourceCode" id="cb101"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb101-1"><a href="looking-at-braking-behaviour.html#cb101-1" aria-hidden="true" tabindex="-1"></a>theme_black <span class="ot">=</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>, <span class="at">base_family =</span> <span class="st">&quot;&quot;</span>) {</span>
-<span id="cb101-2"><a href="looking-at-braking-behaviour.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb101-3"><a href="looking-at-braking-behaviour.html#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_grey</span>(<span class="at">base_size =</span> base_size, <span class="at">base_family =</span> base_family) <span class="sc">%+replace%</span></span>
-<span id="cb101-4"><a href="looking-at-braking-behaviour.html#cb101-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb101-5"><a href="looking-at-braking-behaviour.html#cb101-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(</span>
-<span id="cb101-6"><a href="looking-at-braking-behaviour.html#cb101-6" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify axis options</span></span>
-<span id="cb101-7"><a href="looking-at-braking-behaviour.html#cb101-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.line =</span> <span class="fu">element_blank</span>(),  </span>
-<span id="cb101-8"><a href="looking-at-braking-behaviour.html#cb101-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>),  </span>
-<span id="cb101-9"><a href="looking-at-braking-behaviour.html#cb101-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>),  </span>
-<span id="cb101-10"><a href="looking-at-braking-behaviour.html#cb101-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.ticks =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">size  =</span>  <span class="fl">0.2</span>),  </span>
-<span id="cb101-11"><a href="looking-at-braking-behaviour.html#cb101-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">0</span>)),  </span>
-<span id="cb101-12"><a href="looking-at-braking-behaviour.html#cb101-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">angle =</span> <span class="dv">90</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">0</span>)),  </span>
-<span id="cb101-13"><a href="looking-at-braking-behaviour.html#cb101-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.ticks.length =</span> <span class="fu">unit</span>(<span class="fl">0.3</span>, <span class="st">&quot;lines&quot;</span>),   </span>
-<span id="cb101-14"><a href="looking-at-braking-behaviour.html#cb101-14" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify legend options</span></span>
-<span id="cb101-15"><a href="looking-at-braking-behaviour.html#cb101-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.background =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="cn">NA</span>, <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
-<span id="cb101-16"><a href="looking-at-braking-behaviour.html#cb101-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>,  <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
-<span id="cb101-17"><a href="looking-at-braking-behaviour.html#cb101-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.size =</span> <span class="fu">unit</span>(<span class="fl">1.2</span>, <span class="st">&quot;lines&quot;</span>),  </span>
-<span id="cb101-18"><a href="looking-at-braking-behaviour.html#cb101-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.height =</span> <span class="cn">NULL</span>,  </span>
-<span id="cb101-19"><a href="looking-at-braking-behaviour.html#cb101-19" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.width =</span> <span class="cn">NULL</span>,      </span>
-<span id="cb101-20"><a href="looking-at-braking-behaviour.html#cb101-20" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
-<span id="cb101-21"><a href="looking-at-braking-behaviour.html#cb101-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
-<span id="cb101-22"><a href="looking-at-braking-behaviour.html#cb101-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.position =</span> <span class="st">&quot;right&quot;</span>,  </span>
-<span id="cb101-23"><a href="looking-at-braking-behaviour.html#cb101-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.text.align =</span> <span class="cn">NULL</span>,  </span>
-<span id="cb101-24"><a href="looking-at-braking-behaviour.html#cb101-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.title.align =</span> <span class="cn">NULL</span>,  </span>
-<span id="cb101-25"><a href="looking-at-braking-behaviour.html#cb101-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.direction =</span> <span class="st">&quot;vertical&quot;</span>,  </span>
-<span id="cb101-26"><a href="looking-at-braking-behaviour.html#cb101-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.box =</span> <span class="cn">NULL</span>, </span>
-<span id="cb101-27"><a href="looking-at-braking-behaviour.html#cb101-27" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify panel options</span></span>
-<span id="cb101-28"><a href="looking-at-braking-behaviour.html#cb101-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;black&quot;</span>, <span class="at">color  =</span>  <span class="cn">NA</span>),  </span>
-<span id="cb101-29"><a href="looking-at-braking-behaviour.html#cb101-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
-<span id="cb101-30"><a href="looking-at-braking-behaviour.html#cb101-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey35&quot;</span>),  </span>
-<span id="cb101-31"><a href="looking-at-braking-behaviour.html#cb101-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey20&quot;</span>),  </span>
-<span id="cb101-32"><a href="looking-at-braking-behaviour.html#cb101-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.margin =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">&quot;lines&quot;</span>),   </span>
-<span id="cb101-33"><a href="looking-at-braking-behaviour.html#cb101-33" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify faceting options</span></span>
-<span id="cb101-34"><a href="looking-at-braking-behaviour.html#cb101-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;grey30&quot;</span>, <span class="at">color =</span> <span class="st">&quot;grey10&quot;</span>),  </span>
-<span id="cb101-35"><a href="looking-at-braking-behaviour.html#cb101-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
-<span id="cb101-36"><a href="looking-at-braking-behaviour.html#cb101-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>,<span class="at">angle =</span> <span class="sc">-</span><span class="dv">90</span>),  </span>
-<span id="cb101-37"><a href="looking-at-braking-behaviour.html#cb101-37" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify plot options</span></span>
-<span id="cb101-38"><a href="looking-at-braking-behaviour.html#cb101-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
-<span id="cb101-39"><a href="looking-at-braking-behaviour.html#cb101-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">1.2</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
-<span id="cb101-40"><a href="looking-at-braking-behaviour.html#cb101-40" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.margin =</span> <span class="fu">unit</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="st">&quot;lines&quot;</span>)</span>
-<span id="cb101-41"><a href="looking-at-braking-behaviour.html#cb101-41" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb101-42"><a href="looking-at-braking-behaviour.html#cb101-42" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb101-43"><a href="looking-at-braking-behaviour.html#cb101-43" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb101-44"><a href="looking-at-braking-behaviour.html#cb101-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb104"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb104-1"><a href="looking-at-braking-behaviour.html#cb104-1" aria-hidden="true" tabindex="-1"></a>theme_black <span class="ot">=</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>, <span class="at">base_family =</span> <span class="st">&quot;&quot;</span>) {</span>
+<span id="cb104-2"><a href="looking-at-braking-behaviour.html#cb104-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb104-3"><a href="looking-at-braking-behaviour.html#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_grey</span>(<span class="at">base_size =</span> base_size, <span class="at">base_family =</span> base_family) <span class="sc">%+replace%</span></span>
+<span id="cb104-4"><a href="looking-at-braking-behaviour.html#cb104-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb104-5"><a href="looking-at-braking-behaviour.html#cb104-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(</span>
+<span id="cb104-6"><a href="looking-at-braking-behaviour.html#cb104-6" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify axis options</span></span>
+<span id="cb104-7"><a href="looking-at-braking-behaviour.html#cb104-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.line =</span> <span class="fu">element_blank</span>(),  </span>
+<span id="cb104-8"><a href="looking-at-braking-behaviour.html#cb104-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>),  </span>
+<span id="cb104-9"><a href="looking-at-braking-behaviour.html#cb104-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>),  </span>
+<span id="cb104-10"><a href="looking-at-braking-behaviour.html#cb104-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.ticks =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">size  =</span>  <span class="fl">0.2</span>),  </span>
+<span id="cb104-11"><a href="looking-at-braking-behaviour.html#cb104-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">0</span>)),  </span>
+<span id="cb104-12"><a href="looking-at-braking-behaviour.html#cb104-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">angle =</span> <span class="dv">90</span>, <span class="at">margin =</span> <span class="fu">margin</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">0</span>, <span class="dv">0</span>)),  </span>
+<span id="cb104-13"><a href="looking-at-braking-behaviour.html#cb104-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">axis.ticks.length =</span> <span class="fu">unit</span>(<span class="fl">0.3</span>, <span class="st">&quot;lines&quot;</span>),   </span>
+<span id="cb104-14"><a href="looking-at-braking-behaviour.html#cb104-14" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify legend options</span></span>
+<span id="cb104-15"><a href="looking-at-braking-behaviour.html#cb104-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.background =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="cn">NA</span>, <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
+<span id="cb104-16"><a href="looking-at-braking-behaviour.html#cb104-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>,  <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
+<span id="cb104-17"><a href="looking-at-braking-behaviour.html#cb104-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.size =</span> <span class="fu">unit</span>(<span class="fl">1.2</span>, <span class="st">&quot;lines&quot;</span>),  </span>
+<span id="cb104-18"><a href="looking-at-braking-behaviour.html#cb104-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.height =</span> <span class="cn">NULL</span>,  </span>
+<span id="cb104-19"><a href="looking-at-braking-behaviour.html#cb104-19" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.key.width =</span> <span class="cn">NULL</span>,      </span>
+<span id="cb104-20"><a href="looking-at-braking-behaviour.html#cb104-20" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
+<span id="cb104-21"><a href="looking-at-braking-behaviour.html#cb104-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">face =</span> <span class="st">&quot;bold&quot;</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
+<span id="cb104-22"><a href="looking-at-braking-behaviour.html#cb104-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.position =</span> <span class="st">&quot;right&quot;</span>,  </span>
+<span id="cb104-23"><a href="looking-at-braking-behaviour.html#cb104-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.text.align =</span> <span class="cn">NULL</span>,  </span>
+<span id="cb104-24"><a href="looking-at-braking-behaviour.html#cb104-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.title.align =</span> <span class="cn">NULL</span>,  </span>
+<span id="cb104-25"><a href="looking-at-braking-behaviour.html#cb104-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.direction =</span> <span class="st">&quot;vertical&quot;</span>,  </span>
+<span id="cb104-26"><a href="looking-at-braking-behaviour.html#cb104-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">legend.box =</span> <span class="cn">NULL</span>, </span>
+<span id="cb104-27"><a href="looking-at-braking-behaviour.html#cb104-27" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify panel options</span></span>
+<span id="cb104-28"><a href="looking-at-braking-behaviour.html#cb104-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;black&quot;</span>, <span class="at">color  =</span>  <span class="cn">NA</span>),  </span>
+<span id="cb104-29"><a href="looking-at-braking-behaviour.html#cb104-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
+<span id="cb104-30"><a href="looking-at-braking-behaviour.html#cb104-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey35&quot;</span>),  </span>
+<span id="cb104-31"><a href="looking-at-braking-behaviour.html#cb104-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">&quot;grey20&quot;</span>),  </span>
+<span id="cb104-32"><a href="looking-at-braking-behaviour.html#cb104-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">panel.margin =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">&quot;lines&quot;</span>),   </span>
+<span id="cb104-33"><a href="looking-at-braking-behaviour.html#cb104-33" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify faceting options</span></span>
+<span id="cb104-34"><a href="looking-at-braking-behaviour.html#cb104-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;grey30&quot;</span>, <span class="at">color =</span> <span class="st">&quot;grey10&quot;</span>),  </span>
+<span id="cb104-35"><a href="looking-at-braking-behaviour.html#cb104-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
+<span id="cb104-36"><a href="looking-at-braking-behaviour.html#cb104-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">strip.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>,<span class="at">angle =</span> <span class="sc">-</span><span class="dv">90</span>),  </span>
+<span id="cb104-37"><a href="looking-at-braking-behaviour.html#cb104-37" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Specify plot options</span></span>
+<span id="cb104-38"><a href="looking-at-braking-behaviour.html#cb104-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">fill =</span> <span class="st">&quot;black&quot;</span>),  </span>
+<span id="cb104-39"><a href="looking-at-braking-behaviour.html#cb104-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> base_size<span class="sc">*</span><span class="fl">1.2</span>, <span class="at">color =</span> <span class="st">&quot;white&quot;</span>),  </span>
+<span id="cb104-40"><a href="looking-at-braking-behaviour.html#cb104-40" aria-hidden="true" tabindex="-1"></a>      <span class="at">plot.margin =</span> <span class="fu">unit</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="st">&quot;lines&quot;</span>)</span>
+<span id="cb104-41"><a href="looking-at-braking-behaviour.html#cb104-41" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb104-42"><a href="looking-at-braking-behaviour.html#cb104-42" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb104-43"><a href="looking-at-braking-behaviour.html#cb104-43" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb104-44"><a href="looking-at-braking-behaviour.html#cb104-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>What happens if we try to colour the speed line according to the throttle and brake percentages?</p>
-<div class="sourceCode" id="cb102"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb102-1"><a href="looking-at-braking-behaviour.html#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb102-2"><a href="looking-at-braking-behaviour.html#cb102-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(data=trj_ogier %&gt;% filter(cum_dist&gt;=1000 &amp; cum_dist&lt;=2000),</span></span>
-<span id="cb102-3"><a href="looking-at-braking-behaviour.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#          aes(x=cum_dist,y=speed), color=&#39;white&#39;, size=4) +</span></span>
-<span id="cb102-4"><a href="looking-at-braking-behaviour.html#cb102-4" aria-hidden="true" tabindex="-1"></a>   <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
-<span id="cb102-5"><a href="looking-at-braking-behaviour.html#cb102-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>speed, <span class="at">alpha=</span>throttle), <span class="at">size=</span><span class="dv">1</span>, <span class="at">color=</span><span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
-<span id="cb102-6"><a href="looking-at-braking-behaviour.html#cb102-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
-<span id="cb102-7"><a href="looking-at-braking-behaviour.html#cb102-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>speed<span class="dv">-3</span>, <span class="at">alpha=</span>brk), <span class="at">color=</span><span class="st">&quot;red&quot;</span>, <span class="at">size=</span><span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb102-8"><a href="looking-at-braking-behaviour.html#cb102-8" aria-hidden="true" tabindex="-1"></a>   <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
-<span id="cb102-9"><a href="looking-at-braking-behaviour.html#cb102-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle<span class="dv">-50</span>, <span class="at">alpha=</span><span class="dv">100</span><span class="sc">-</span>brk), <span class="at">size=</span><span class="dv">1</span>, <span class="at">color=</span><span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
-<span id="cb102-10"><a href="looking-at-braking-behaviour.html#cb102-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
-<span id="cb102-11"><a href="looking-at-braking-behaviour.html#cb102-11" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>brk<span class="dv">-50</span>, <span class="at">alpha=</span><span class="dv">100</span><span class="sc">-</span>throttle), <span class="at">color=</span><span class="st">&quot;red&quot;</span>, <span class="at">size=</span><span class="dv">1</span>)<span class="sc">+</span></span>
-<span id="cb102-12"><a href="looking-at-braking-behaviour.html#cb102-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb102-13"><a href="looking-at-braking-behaviour.html#cb102-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_black</span>()<span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">&quot;none&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb105"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb105-1"><a href="looking-at-braking-behaviour.html#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb105-2"><a href="looking-at-braking-behaviour.html#cb105-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_line(data=trj_ogier %&gt;% filter(cum_dist&gt;=1000 &amp; cum_dist&lt;=2000),</span></span>
+<span id="cb105-3"><a href="looking-at-braking-behaviour.html#cb105-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#          aes(x=cum_dist,y=speed), color=&#39;white&#39;, size=4) +</span></span>
+<span id="cb105-4"><a href="looking-at-braking-behaviour.html#cb105-4" aria-hidden="true" tabindex="-1"></a>   <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
+<span id="cb105-5"><a href="looking-at-braking-behaviour.html#cb105-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>speed, <span class="at">alpha=</span>throttle), <span class="at">size=</span><span class="dv">1</span>, <span class="at">color=</span><span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
+<span id="cb105-6"><a href="looking-at-braking-behaviour.html#cb105-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
+<span id="cb105-7"><a href="looking-at-braking-behaviour.html#cb105-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>speed<span class="dv">-3</span>, <span class="at">alpha=</span>brk), <span class="at">color=</span><span class="st">&quot;red&quot;</span>, <span class="at">size=</span><span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb105-8"><a href="looking-at-braking-behaviour.html#cb105-8" aria-hidden="true" tabindex="-1"></a>   <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
+<span id="cb105-9"><a href="looking-at-braking-behaviour.html#cb105-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>throttle<span class="dv">-50</span>, <span class="at">alpha=</span><span class="dv">100</span><span class="sc">-</span>brk), <span class="at">size=</span><span class="dv">1</span>, <span class="at">color=</span><span class="st">&quot;green&quot;</span>) <span class="sc">+</span></span>
+<span id="cb105-10"><a href="looking-at-braking-behaviour.html#cb105-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_ogier <span class="sc">%&gt;%</span> <span class="fu">filter</span>(cum_dist<span class="sc">&gt;=</span><span class="dv">1000</span> <span class="sc">&amp;</span> cum_dist<span class="sc">&lt;=</span><span class="dv">2000</span>),</span>
+<span id="cb105-11"><a href="looking-at-braking-behaviour.html#cb105-11" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x=</span>cum_dist,<span class="at">y=</span>brk<span class="dv">-50</span>, <span class="at">alpha=</span><span class="dv">100</span><span class="sc">-</span>throttle), <span class="at">color=</span><span class="st">&quot;red&quot;</span>, <span class="at">size=</span><span class="dv">1</span>)<span class="sc">+</span></span>
+<span id="cb105-12"><a href="looking-at-braking-behaviour.html#cb105-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb105-13"><a href="looking-at-braking-behaviour.html#cb105-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_black</span>()<span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">&quot;none&quot;</span>)</span></code></pre></div>
 <pre><code>## Warning: `panel.margin` is deprecated. Please use `panel.spacing` property
 ## instead</code></pre>
-<p><img src="images/unnamed-chunk-52-1.png" width="672" /></p>
-<div class="sourceCode" id="cb104"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb104-1"><a href="looking-at-braking-behaviour.html#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>telem_df_full) <span class="sc">+</span> <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color=</span>throttle), <span class="at">size=</span><span class="fl">0.1</span>)</span></code></pre></div>
-<p><img src="images/unnamed-chunk-53-1.png" width="672" /></p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb105-1"><a href="looking-at-braking-behaviour.html#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>telem_df_full) <span class="sc">+</span> <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color=</span><span class="sc">-</span>brk), <span class="at">size=</span><span class="fl">0.1</span>)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-54-1.png" width="672" /></p>
+<div class="sourceCode" id="cb107"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb107-1"><a href="looking-at-braking-behaviour.html#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>telem_df_full) <span class="sc">+</span> <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color=</span>throttle), <span class="at">size=</span><span class="fl">0.1</span>)</span></code></pre></div>
+<p><img src="images/unnamed-chunk-55-1.png" width="672" /></p>
+<div class="sourceCode" id="cb108"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb108-1"><a href="looking-at-braking-behaviour.html#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>telem_df_full) <span class="sc">+</span> <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">color=</span><span class="sc">-</span>brk), <span class="at">size=</span><span class="fl">0.1</span>)</span></code></pre></div>
+<p><img src="images/unnamed-chunk-56-1.png" width="672" /></p>
 </div>
 </div>
             </section>
@@ -353,7 +356,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -372,6 +374,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": {}
 },
 "fontsettings": {
@@ -389,6 +392,10 @@ gitbook.start({
 "text": null
 },
 "download": null,
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "section",
 "scroll_highlight": true
@@ -397,7 +404,6 @@ gitbook.start({
 "toolbar": {
 "position": "fixed"
 },
-"search": true,
 "info": true
 });
 });

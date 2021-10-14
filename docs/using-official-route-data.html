@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>3 Using Official Route Data | Visualising WRC Telemetry Data</title>
+  <title>3 Using Official Route Data | Visualising WRC Telemetry Data With R</title>
   <meta name="description" content="Analysing WRC telemetry data." />
-  <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="3 Using Official Route Data | Visualising WRC Telemetry Data" />
+  <meta property="og:title" content="3 Using Official Route Data | Visualising WRC Telemetry Data With R" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="3 Using Official Route Data | Visualising WRC Telemetry Data" />
+  <meta name="twitter:title" content="3 Using Official Route Data | Visualising WRC Telemetry Data With R" />
   
   <meta name="twitter:description" content="Analysing WRC telemetry data." />
   
@@ -32,8 +32,9 @@
   
 <link rel="prev" href="loading-the-live-telemetry-route-data.html"/>
 <link rel="next" href="telemetry-data-along-a-stage.html"/>
-<script src="libs/header-attrs-2.7/header-attrs.js"></script>
-<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<script src="libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
@@ -49,10 +50,11 @@
 
 
 
-
+<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
 <script src="libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
-<script src="libs/htmlwidgets-1.5.3.9000/htmlwidgets.js"></script>
+<script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
 <link href="libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
 <script src="libs/leaflet-1.3.1/leaflet.js"></script>
 <link href="libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
@@ -130,6 +132,7 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
+
 
 </head>
 
@@ -215,7 +218,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Visualising WRC Telemetry Data With R</a>
           </h1>
         </div>
 
@@ -235,13 +238,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2><span class="header-section-number">3.1</span> Loading Official Stage Route Data</h2>
 <p>Let’s load in some route data:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="using-official-route-data.html#cb9-1" aria-hidden="true" tabindex="-1"></a>geojson_sf <span class="ot">=</span> sf<span class="sc">::</span><span class="fu">st_read</span>(geojson_filename)</span></code></pre></div>
-<pre><code>## Reading layer `finland_2021&#39; from data source `/Users/tonyhirst/Documents/GitHub/visualising-wrc-telemetry-data/src/data/finland_2021.geojson&#39; using driver `GeoJSON&#39;
+<pre><code>## Reading layer `finland_2021&#39; from data source 
+##   `/Users/tonyhirst/Documents/GitHub/visualising-wrc-telemetry-data/src/data/finland_2021.geojson&#39; 
+##   using driver `GeoJSON&#39;
 ## Simple feature collection with 13 features and 2 fields
-## geometry type:  GEOMETRY
-## dimension:      XYZ
-## bbox:           xmin: 24.86575 ymin: 61.52393 xmax: 26.20794 ymax: 62.39946
-## z_range:        zmin: 0 zmax: 148.839
-## geographic CRS: WGS 84</code></pre>
+## Geometry type: GEOMETRY
+## Dimension:     XYZ
+## Bounding box:  xmin: 24.86575 ymin: 61.52393 xmax: 26.20794 ymax: 62.39946
+## z_range:       zmin: 0 zmax: 148.839
+## Geodetic CRS:  WGS 84</code></pre>
 <p>Let’s also clean the data a little by removing the reference to the Z dimension, making a note of original co-ordinate reference scheme, and generating references to the route in both latlong and UTM forms:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="using-official-route-data.html#cb11-1" aria-hidden="true" tabindex="-1"></a>stage_route  <span class="ot">=</span> geojson_sf[<span class="dv">7</span>,]  <span class="sc">%&gt;%</span> <span class="fu">st_zm</span>()</span>
 <span id="cb11-2"><a href="using-official-route-data.html#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -283,7 +288,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
-<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
 <script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
 <script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
@@ -302,6 +306,7 @@ gitbook.start({
 "weibo": false,
 "instapaper": false,
 "vk": false,
+"whatsapp": false,
 "all": {}
 },
 "fontsettings": {
@@ -319,6 +324,10 @@ gitbook.start({
 "text": null
 },
 "download": null,
+"search": {
+"engine": "fuse",
+"options": null
+},
 "toc": {
 "collapse": "section",
 "scroll_highlight": true
@@ -327,7 +336,6 @@ gitbook.start({
 "toolbar": {
 "position": "fixed"
 },
-"search": true,
 "info": true
 });
 });

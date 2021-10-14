@@ -8,7 +8,7 @@ library(sf)
 library(trajr)
 library(lubridate)
 library(ggplot2)
-library(stringi)
+library(stringr)
 
 knitr.duplicate.label = "allow"
 knitr::opts_chunk$set(fig.path = "images/")
@@ -26,8 +26,8 @@ Inspection of the telemetry files suggests that the data is presented in a commo
 Load in the full resolution telemetry:
 
 ```{r}
-
 get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
+  # TO DO - the proj parameter is not used?
   telem_df_full_raw = read.csv(fp)  %>% drop_na("lon", "lat") %>% 
                   map_df(rev) %>%
    # Omit the negative start time in row 2
@@ -38,6 +38,8 @@ get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
   # This would then ensure a normalisation of the distance into the stage
   # against a common origin
   
+  # TO DO - here we explicitly set the lat long crs
+  # TO DO - don't use the literal 4326
   telem_df_full_raw$lonX = telem_df_full_raw$lon
   telem_df_full_raw$latX = telem_df_full_raw$lat
   telem_df_full = telem_df_full_raw  %>%
@@ -45,7 +47,7 @@ get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
 
   # Inject name from file name into dataframe
   # Remove accents
-  clean_fp = stri_trans_general(fp, "Latin-ASCII")
+  clean_fp = stringi::stri_trans_general(fp, "Latin-ASCII")
   metadata = str_match(fp, ".*df_telemetrymergeddata_(SS.*)_(.*).csv")
   stage_ =  metadata[2]
   driver_ = str_trim(stringi::stri_trans_general(metadata[3], "Latin-ASCII"))
@@ -62,7 +64,10 @@ get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
     telem_df_full
   }
 }
+```
 
+We can then load the telemetry data in
+```{r}
 fn="df_telemetrymergeddata_SS7_Evans.csv"
 telem_df_full = get_full_telem(file.path(path, fn))
 ```
@@ -87,7 +92,6 @@ Or how about plotting the data using ggplot:
 
 ```{r}
 ggplot(data=telem_df_full) + geom_sf(aes(color=speed), size=0.1)
- 
 ```
 
 # Generating a `trajr` Route From the Telemetry Data
@@ -145,7 +149,6 @@ If we plot these values against the distance into stage, generated from the loca
 The `trajr` route actually calculates a distance into the route assuming an origin based on the first point in the route.
 
 ```{r}
-
 evans_fn="df_telemetrymergeddata_SS7_Evans.csv"
 trj_evans = telemetry_full_trajectory(get_full_telem(file.path(path, evans_fn)))
 
@@ -154,7 +157,6 @@ trj_ogier = telemetry_full_trajectory(get_full_telem(file.path(path, ogier_fn)))
 
 breen_fn="df_telemetrymergeddata_SS7_Breen.csv"
 trj_breen = telemetry_full_trajectory(get_full_telem(file.path(path, breen_fn)))
-
 ```
 
 # Finding Distance into a Common Route
@@ -179,7 +181,12 @@ dist_into_route = function(trj_utm, stage_route_utm) {
   rgeos::gProject(as(stage_route_utm,"Spatial"),
                   full_pois_points_utm_sp,  normalized = FALSE)
 }
+```
 
+We can now get the distance into route for each telemetry point:
+
+```{r warning=FALSE}
+# This throws a warning?
 trj_evans$dist_into_route = dist_into_route(trj_evans, stage_route_utm)
 trj_ogier$dist_into_route = dist_into_route(trj_ogier, stage_route_utm)
 ```
@@ -312,12 +319,10 @@ ggplot() +
 
 ```{r}
 ggplot(data=telem_df_full) + geom_sf(aes(color=throttle), size=0.1)
- 
 ```
 
 ```{r}
 ggplot(data=telem_df_full) + geom_sf(aes(color=-brk), size=0.1)
- 
 ```
 
 
@@ -364,14 +369,18 @@ ggplot() +
 
 # Correlating Telemetry Traces
 
-We can use a cross-correlation function to try to identify the extent to which traces are similar across drivers
+We can use a cross-correlation function to try to identify the extent to which traces are similar across drivers. The `approxfun()` estimator does a very simple interpoloation between consecutive values in the original dataset, which means that actual telemetry data values are pinned in the prediction model and used for local estimation. 
 
 ```{r}
 ts_estimator = function(df, x, y, points){
   estimator_ = approxfun(df[[x]], df[[y]])
   estimator_(points)
 }
+```
 
+We can use this function to estimate different properties from the time series telemetry data. 
+
+```{r}
 ogier_speed_est = ts_estimator(trj_ogier, "cum_dist", "speed", segments)
 evans_speed_est = ts_estimator(trj_evans, "cum_dist", "speed", segments)
 
@@ -403,8 +412,71 @@ ccf(ogier_brk_est, evans_brk_est)
 
 We can use the telemetry from a route to validate (or not!) our speed model. So let's have a go at that...
 
-TO DO
+We already have a stage route available, but let's just recap how to generate that from a stage route:
 
+```{r}
+#stepdist = 10
+#window = 20
+route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>% 
+                      mutate(radius = curvatures(.)) %>% 
+                      corner_speed_model() %>% 
+                      acceleration_model(acc=0.1, dec=0.05)
+route_convexity
+```
+
+To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.
+
+```{r}
+buffer_width = 50
+buffered_route = get_buffered_route(stage_route_utm, buffer_width,
+                                    crs=original_crs, utm=FALSE)
+
+telem_df_full_test_utm = get_full_telem(file.path(path, fn), utm=TRUE)
+buffered_telem_test_utm = get_route_telem(stage_route_utm,
+                                          telem_df_full_test_utm)
+
+trj_buffered_test = buffered_telem_test_utm %>%
+                        telemetry_full_trajectory() %>%
+                        mutate(dist_into_route = dist_into_route(., stage_route_utm))
+
+# Generate speed points at same sample distances as in speed model
+sample_points = route_convexity$cum_dist
+
+# Estimate based on telemetry
+test_speeds = ts_estimator(trj_buffered_test,
+                           "cum_dist", "speed", sample_points)
+
+#test_speeds = test_estimator(sample_points)
+```
+
+```{r message=FALSE, warning=FALSE}
+# Just quickly check that the sample speed model approximates the raw data
+ggplot() + 
+  geom_line(data=trj_buffered_test,
+                     aes(x=dist_into_route, y=speed)) +
+  geom_line(aes(x=sample_points, y=test_speeds),
+            color='red', linetype = "dashed")
+```
+
+
+```{r warning=FALSE}
+# Just quickly check that the sample speed model approximates the raw data
+ggplot() + 
+  geom_line(data=route_convexity,
+                     aes(x=cum_dist, y=acc_sp)) +
+  geom_line(aes(x=sample_points, y=test_speeds),
+            color='red') +
+  geom_line(aes(x=sample_points, y=test_speeds - route_convexity$acc_sp),
+            color='blue')
+```
+
+We can now find a simple cross correlation between the speed model and some speed telemetry data:
+
+```{r}
+correlation = ccf(route_convexity$acc_sp, test_speeds, na.action=na.pass)
+
+correlation
+```
 
 
 # Smoothing a Route
@@ -424,4 +496,4 @@ However, the smoothing is based on being provided with an actual route. If we ha
 
 Thinking a bit more ecologically, we might perhaps consider a group of animals following the same (ish) path over a period of time and then trying to work out the route they take from those separate sets of sample data. How do the ecologists do that?
 
-If we know the start and end of the route are nominally at the same location, we can normalise the route length of multiple routes, maps equidistant points onto each other, and then take the average. For example, this solution: https://stackoverflow.com/a/65341730/454773 . See also https://en.wikipedia.org/wiki/Dynamic_time_warping and https://dynamictimewarping.github.io/r/ .
+If we know the start and end of the route are nominally at the same location, we can normalise the route length of multiple routes, map equidistant points onto each other, and then take the average. For example, this solution: https://stackoverflow.com/a/65341730/454773 . See also https://en.wikipedia.org/wiki/Dynamic_time_warping and https://dynamictimewarping.github.io/r/ .
