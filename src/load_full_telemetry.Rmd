@@ -448,6 +448,8 @@ test_speeds = ts_estimator(trj_buffered_test,
 #test_speeds = test_estimator(sample_points)
 ```
 
+We can plot the actual speed (as captured  telemetry) along with the interpolated speed at regular points along the stage to check the behaviour of the interpolator.
+
 ```{r message=FALSE, warning=FALSE}
 # Just quickly check that the sample speed model approximates the raw data
 ggplot() + 
@@ -459,7 +461,7 @@ ggplot() +
 
 Comparing the traces, the simple estimator appears to do a reasonable job of interpolating speeds between the sample points, which means we can get a reasonable estimate of speed, from the telemetry, at any point along the route.
 
-How well does the time into stage prediction work?
+How well does the time into stage interpolation work (which is to say: can we reliably interpolate the time into stage from a telemetry based model)?
 
 ```{r message=FALSE, warning=FALSE}
 test_times = ts_estimator(trj_buffered_test,

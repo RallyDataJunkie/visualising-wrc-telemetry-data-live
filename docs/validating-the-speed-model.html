@@ -257,6 +257,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb131-18"><a href="validating-the-speed-model.html#cb131-18" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, sample_points)</span>
 <span id="cb131-19"><a href="validating-the-speed-model.html#cb131-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb131-20"><a href="validating-the-speed-model.html#cb131-20" aria-hidden="true" tabindex="-1"></a><span class="co">#test_speeds = test_estimator(sample_points)</span></span></code></pre></div>
+<p>We can plot the actual speed (as captured telemetry) along with the interpolated speed at regular points along the stage to check the behaviour of the interpolator.</p>
 <div class="sourceCode" id="cb132"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb132-1"><a href="validating-the-speed-model.html#cb132-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Just quickly check that the sample speed model approximates the raw data</span></span>
 <span id="cb132-2"><a href="validating-the-speed-model.html#cb132-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb132-3"><a href="validating-the-speed-model.html#cb132-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>trj_buffered_test,</span>
@@ -265,7 +266,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb132-6"><a href="validating-the-speed-model.html#cb132-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">color=</span><span class="st">&#39;red&#39;</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-65-1.png" width="672" /></p>
 <p>Comparing the traces, the simple estimator appears to do a reasonable job of interpolating speeds between the sample points, which means we can get a reasonable estimate of speed, from the telemetry, at any point along the route.</p>
-<p>How well does the time into stage prediction work?</p>
+<p>How well does the time into stage interpolation work (which is to say: can we reliably interpolate the time into stage from a telemetry based model)?</p>
 <div class="sourceCode" id="cb133"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb133-1"><a href="validating-the-speed-model.html#cb133-1" aria-hidden="true" tabindex="-1"></a>test_times <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_buffered_test,</span>
 <span id="cb133-2"><a href="validating-the-speed-model.html#cb133-2" aria-hidden="true" tabindex="-1"></a>                          <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;displacementTime&quot;</span>, sample_points)</span>
 <span id="cb133-3"><a href="validating-the-speed-model.html#cb133-3" aria-hidden="true" tabindex="-1"></a></span>
