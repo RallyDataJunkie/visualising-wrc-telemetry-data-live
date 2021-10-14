@@ -414,14 +414,13 @@ We can use the telemetry from a route to validate (or not!) our speed model. So 
 
 We already have a stage route available, but let's just recap how to generate that from a stage route:
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 #stepdist = 10
 #window = 20
 route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>% 
                       mutate(radius = curvatures(.)) %>% 
                       corner_speed_model() %>% 
                       acceleration_model(acc=0.1, dec=0.05)
-route_convexity
 ```
 
 To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.
@@ -458,6 +457,24 @@ ggplot() +
             color='red', linetype = "dashed")
 ```
 
+Comparing the traces, the simple estimator appears to do a reasonable job of interpolating speeds between the sample points, which means we can get a reasonable estimate of speed, from the telemetry, at any point along the route.
+
+How well does the time into stage prediction work?
+
+```{r}
+test_times = ts_estimator(trj_buffered_test,
+                          "cum_dist", "displacementTime", sample_points)
+
+ggplot() + 
+  geom_line(data=trj_buffered_test,
+                     aes(x=dist_into_route, y=displacementTime)) +
+  geom_line(aes(x=sample_points, y=test_times),
+            color='red', linetype = "dashed")
+```
+
+Again, that looks reasonable.
+
+Now let's see how our simple speed model works. To begin with, how well do the speeds predicted by the speed model, based on stage route analysis, compared with speeds captured from telemetry?
 
 ```{r warning=FALSE}
 # Just quickly check that the sample speed model approximates the raw data
@@ -470,13 +487,65 @@ ggplot() +
             color='blue')
 ```
 
-We can now find a simple cross correlation between the speed model and some speed telemetry data:
+We can also find a simple cross correlation between the speed model and some speed telemetry data:
 
 ```{r}
-correlation = ccf(route_convexity$acc_sp, test_speeds, na.action=na.pass)
+speed_correlation = ccf(route_convexity$acc_sp, test_speeds, na.action=na.pass)
 
-correlation
+speed_correlation
 ```
+
+The model is a bit rough, bit captures some of the major features, and gives us a crude approximation of speed.
+
+Perhpaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let's see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:
+
+```{r warning=FALSE, message=FALSE}
+ggplot() + 
+  geom_line(data=route_convexity,
+                     aes(x=cum_dist, y=acc_time)) +
+  geom_line(aes(x=sample_points, y=test_times),
+            color='red') +
+  geom_line(aes(x=sample_points, y=test_times - route_convexity$acc_time),
+            color='blue')
+```
+
+There appear to be two types of error in the prediction: a general trend component error, where the prediction appears to drift consistently from the actual time into stage as captured from telemetry; and a possible difference in "shape" of the lines.
+
+We can detrend the prediction error to get a feel how the "shape" of the predicted time drifts from the actual time. One way of detrending the data is to create a linear model of it and then inspect the residual error around that model.
+
+
+```{r warning=FALSE, message=FALSE}
+linear_time_model = lm((test_times - route_convexity$acc_time) ~ c(1:length(test_times)))
+
+plot(resid(linear_time_model), type="l") 
+```
+Another approach is to normalise the curves and then compare them:
+
+```{r warning=FALSE, message=FALSE}
+test_times_normalised = test_times / max(test_times, na.rm=T)
+acc_time_normalised = route_convexity$acc_time / max(route_convexity$acc_time,
+                                                     na.rm=T)
+
+ggplot() + 
+  geom_line(aes(x=sample_points, y=acc_time_normalised)) +
+  geom_line(aes(x=sample_points, y=test_times_normalised),
+            color='red')
+
+```
+
+We can also compare the error between the actual times into stage and the predicted times, and the actual times into stage compared to a linear model.
+
+If the error of the predicted time into stage is less than that of the linear model, then it adds some value to time predictions based on sparse telemetry.
+
+```{r warning=FALSE, message=FALSE}
+ggplot() + 
+  geom_line(aes(x=sample_points, y=test_times_normalised - acc_time_normalised),
+            color='blue') + 
+   geom_line(aes(x=sample_points,
+                 y=acc_time_normalised - sample_points/max(sample_points, na.rm=T)),
+            color='purple')
+```
+
 
 
 # Smoothing a Route
