@@ -414,7 +414,7 @@ We can use the telemetry from a route to validate (or not!) our speed model. So 
 
 We already have a stage route available, but let's just recap how to generate that from a stage route:
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, results='hide'}
 #stepdist = 10
 #window = 20
 route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>% 
