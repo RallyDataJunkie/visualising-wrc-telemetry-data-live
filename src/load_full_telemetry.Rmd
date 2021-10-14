@@ -425,7 +425,7 @@ route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>%
 
 To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 buffer_width = 50
 buffered_route = get_buffered_route(stage_route_utm, buffer_width,
                                     crs=original_crs, utm=FALSE)
@@ -461,7 +461,7 @@ Comparing the traces, the simple estimator appears to do a reasonable job of int
 
 How well does the time into stage prediction work?
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 test_times = ts_estimator(trj_buffered_test,
                           "cum_dist", "displacementTime", sample_points)
 
@@ -519,6 +519,7 @@ linear_time_model = lm((test_times - route_convexity$acc_time) ~ c(1:length(test
 
 plot(resid(linear_time_model), type="l") 
 ```
+
 Another approach is to normalise the curves and then compare them:
 
 ```{r warning=FALSE, message=FALSE}
@@ -543,9 +544,8 @@ ggplot() +
             color='blue') + 
    geom_line(aes(x=sample_points,
                  y=acc_time_normalised - sample_points/max(sample_points, na.rm=T)),
-            color='purple')
+            color='red')
 ```
-
 
 
 # Smoothing a Route
