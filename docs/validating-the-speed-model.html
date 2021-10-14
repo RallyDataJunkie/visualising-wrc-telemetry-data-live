@@ -234,8 +234,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb130-2"><a href="validating-the-speed-model.html#cb130-2" aria-hidden="true" tabindex="-1"></a><span class="co">#window = 20</span></span>
 <span id="cb130-3"><a href="validating-the-speed-model.html#cb130-3" aria-hidden="true" tabindex="-1"></a>route_convexity <span class="ot">=</span> <span class="fu">get_route_convexity</span>(stage_route_utm, stepdist, window) <span class="sc">%&gt;%</span> </span>
 <span id="cb130-4"><a href="validating-the-speed-model.html#cb130-4" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">mutate</span>(<span class="at">radius =</span> <span class="fu">curvatures</span>(.)) <span class="sc">%&gt;%</span> </span>
-<span id="cb130-5"><a href="validating-the-speed-model.html#cb130-5" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">corner_speed_model</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb130-6"><a href="validating-the-speed-model.html#cb130-6" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">acceleration_model</span>(<span class="at">acc=</span><span class="fl">0.1</span>, <span class="at">dec=</span><span class="fl">0.05</span>)</span></code></pre></div>
+<span id="cb130-5"><a href="validating-the-speed-model.html#cb130-5" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">corner_speed_model</span>(<span class="at">speed_modifier=</span><span class="dv">10</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb130-6"><a href="validating-the-speed-model.html#cb130-6" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">acceleration_model</span>(<span class="at">acc=</span><span class="fl">0.1</span>, <span class="at">dec=</span><span class="fl">0.05</span>)</span>
+<span id="cb130-7"><a href="validating-the-speed-model.html#cb130-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-8"><a href="validating-the-speed-model.html#cb130-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate speed points at same sample distances as in speed model</span></span>
+<span id="cb130-9"><a href="validating-the-speed-model.html#cb130-9" aria-hidden="true" tabindex="-1"></a>sample_points <span class="ot">=</span> route_convexity<span class="sc">$</span>cum_dist</span></code></pre></div>
 <p>To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.</p>
 <div class="sourceCode" id="cb131"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb131-1"><a href="validating-the-speed-model.html#cb131-1" aria-hidden="true" tabindex="-1"></a>buffer_width <span class="ot">=</span> <span class="dv">50</span></span>
 <span id="cb131-2"><a href="validating-the-speed-model.html#cb131-2" aria-hidden="true" tabindex="-1"></a>buffered_route <span class="ot">=</span> <span class="fu">get_buffered_route</span>(stage_route_utm, buffer_width,</span>
@@ -249,14 +252,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb131-10"><a href="validating-the-speed-model.html#cb131-10" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">telemetry_full_trajectory</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb131-11"><a href="validating-the-speed-model.html#cb131-11" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">mutate</span>(<span class="at">dist_into_route =</span> <span class="fu">dist_into_route</span>(., stage_route_utm))</span>
 <span id="cb131-12"><a href="validating-the-speed-model.html#cb131-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb131-13"><a href="validating-the-speed-model.html#cb131-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate speed points at same sample distances as in speed model</span></span>
-<span id="cb131-14"><a href="validating-the-speed-model.html#cb131-14" aria-hidden="true" tabindex="-1"></a>sample_points <span class="ot">=</span> route_convexity<span class="sc">$</span>cum_dist</span>
-<span id="cb131-15"><a href="validating-the-speed-model.html#cb131-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb131-16"><a href="validating-the-speed-model.html#cb131-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate based on telemetry</span></span>
-<span id="cb131-17"><a href="validating-the-speed-model.html#cb131-17" aria-hidden="true" tabindex="-1"></a>test_speeds <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_buffered_test,</span>
-<span id="cb131-18"><a href="validating-the-speed-model.html#cb131-18" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, sample_points)</span>
-<span id="cb131-19"><a href="validating-the-speed-model.html#cb131-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb131-20"><a href="validating-the-speed-model.html#cb131-20" aria-hidden="true" tabindex="-1"></a><span class="co">#test_speeds = test_estimator(sample_points)</span></span></code></pre></div>
+<span id="cb131-13"><a href="validating-the-speed-model.html#cb131-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate based on telemetry</span></span>
+<span id="cb131-14"><a href="validating-the-speed-model.html#cb131-14" aria-hidden="true" tabindex="-1"></a>test_speeds <span class="ot">=</span> <span class="fu">ts_estimator</span>(trj_buffered_test,</span>
+<span id="cb131-15"><a href="validating-the-speed-model.html#cb131-15" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;cum_dist&quot;</span>, <span class="st">&quot;speed&quot;</span>, sample_points)</span>
+<span id="cb131-16"><a href="validating-the-speed-model.html#cb131-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-17"><a href="validating-the-speed-model.html#cb131-17" aria-hidden="true" tabindex="-1"></a><span class="co">#test_speeds = test_estimator(sample_points)</span></span></code></pre></div>
 <p>We can plot the actual speed (as captured telemetry) along with the interpolated speed at regular points along the stage to check the behaviour of the interpolator.</p>
 <div class="sourceCode" id="cb132"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb132-1"><a href="validating-the-speed-model.html#cb132-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Just quickly check that the sample speed model approximates the raw data</span></span>
 <span id="cb132-2"><a href="validating-the-speed-model.html#cb132-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
@@ -295,19 +295,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## Autocorrelations of series &#39;X&#39;, by lag
 ## 
 ##    -29    -28    -27    -26    -25    -24    -23    -22    -21    -20    -19 
-## -0.084 -0.079 -0.074 -0.068 -0.060 -0.049 -0.039 -0.027 -0.016 -0.002  0.011 
+## -0.083 -0.078 -0.074 -0.068 -0.059 -0.048 -0.039 -0.026 -0.015 -0.001  0.012 
 ##    -18    -17    -16    -15    -14    -13    -12    -11    -10     -9     -8 
-##  0.025  0.038  0.057  0.076  0.091  0.105  0.121  0.142  0.164  0.181  0.198 
+##  0.026  0.039  0.059  0.078  0.093  0.107  0.123  0.144  0.165  0.183  0.199 
 ##     -7     -6     -5     -4     -3     -2     -1      0      1      2      3 
-##  0.220  0.242  0.265  0.290  0.318  0.347  0.378  0.404  0.432  0.466  0.500 
+##  0.221  0.243  0.265  0.290  0.318  0.346  0.378  0.404  0.432  0.465  0.499 
 ##      4      5      6      7      8      9     10     11     12     13     14 
-##  0.531  0.555  0.567  0.560  0.543  0.523  0.496  0.461  0.420  0.383  0.349 
+##  0.530  0.554  0.566  0.559  0.541  0.522  0.495  0.460  0.419  0.382  0.348 
 ##     15     16     17     18     19     20     21     22     23     24     25 
-##  0.316  0.287  0.260  0.234  0.211  0.185  0.161  0.145  0.135  0.126  0.114 
+##  0.315  0.287  0.259  0.234  0.210  0.185  0.160  0.145  0.135  0.126  0.114 
 ##     26     27     28     29 
 ##  0.098  0.086  0.076  0.068</code></pre>
 <p>The model is a bit rough, bit captures some of the major features, and gives us a crude approximation of speed.</p>
-<p>Perhpaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let’s see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:</p>
+<p>Perhaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let’s see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:</p>
 <div class="sourceCode" id="cb138"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb138-1"><a href="validating-the-speed-model.html#cb138-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb138-2"><a href="validating-the-speed-model.html#cb138-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>route_convexity,</span>
 <span id="cb138-3"><a href="validating-the-speed-model.html#cb138-3" aria-hidden="true" tabindex="-1"></a>                     <span class="fu">aes</span>(<span class="at">x=</span>cum_dist, <span class="at">y=</span>acc_time)) <span class="sc">+</span></span>
@@ -317,11 +317,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb138-7"><a href="validating-the-speed-model.html#cb138-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">color=</span><span class="st">&#39;blue&#39;</span>)</span></code></pre></div>
 <p><img src="images/unnamed-chunk-69-1.png" width="672" /></p>
 <p>There appear to be two types of error in the prediction: a general trend component error, where the prediction appears to drift consistently from the actual time into stage as captured from telemetry; and a possible difference in “shape” of the lines.</p>
+<p>We can modify the model to account for the linear dirft by tweaking the cornering speed model. A trivial way to do this is to fettle the <code>speed_modifier</code> parameter in the <code>corner_speed_model()</code> function.</p>
 <p>We can detrend the prediction error to get a feel how the “shape” of the predicted time drifts from the actual time. One way of detrending the data is to create a linear model of it and then inspect the residual error around that model.</p>
 <div class="sourceCode" id="cb139"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb139-1"><a href="validating-the-speed-model.html#cb139-1" aria-hidden="true" tabindex="-1"></a>linear_time_model <span class="ot">=</span> <span class="fu">lm</span>((test_times <span class="sc">-</span> route_convexity<span class="sc">$</span>acc_time) <span class="sc">~</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(test_times)))</span>
 <span id="cb139-2"><a href="validating-the-speed-model.html#cb139-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb139-3"><a href="validating-the-speed-model.html#cb139-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">resid</span>(linear_time_model), <span class="at">type=</span><span class="st">&quot;l&quot;</span>) </span></code></pre></div>
 <p><img src="images/unnamed-chunk-70-1.png" width="672" /></p>
+<p>By inspection of the elevation map for this stage, we may be lossing time in the model compared to the actual telemetry on downhill sections. The speed model does not currently take elevation / elevation change into account. But perhaps it should, particularly on downhill sections?</p>
 <p>Another approach is to normalise the curves and then compare them:</p>
 <div class="sourceCode" id="cb140"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb140-1"><a href="validating-the-speed-model.html#cb140-1" aria-hidden="true" tabindex="-1"></a>test_times_normalised <span class="ot">=</span> test_times <span class="sc">/</span> <span class="fu">max</span>(test_times, <span class="at">na.rm=</span>T)</span>
 <span id="cb140-2"><a href="validating-the-speed-model.html#cb140-2" aria-hidden="true" tabindex="-1"></a>acc_time_normalised <span class="ot">=</span> route_convexity<span class="sc">$</span>acc_time <span class="sc">/</span> <span class="fu">max</span>(route_convexity<span class="sc">$</span>acc_time,</span>

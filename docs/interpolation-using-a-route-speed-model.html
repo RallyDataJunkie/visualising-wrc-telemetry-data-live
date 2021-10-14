@@ -271,7 +271,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb71-15"><a href="interpolation-using-a-route-speed-model.html#cb71-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb71-16"><a href="interpolation-using-a-route-speed-model.html#cb71-16" aria-hidden="true" tabindex="-1"></a>route_convexity <span class="ot">=</span> <span class="fu">get_route_convexity</span>(stage_route_utm)</span></code></pre></div>
 <pre><code>##    user  system elapsed 
-##   0.189   0.031   0.222 
+##   0.180   0.032   0.219 
 ## [1] &quot;Features skipped due to size: &quot;
 ## logical(0)</code></pre>
 <div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="interpolation-using-a-route-speed-model.html#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(route_convexity, <span class="dv">3</span>)</span></code></pre></div>
@@ -348,31 +348,36 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul>
 <div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb77-1"><a href="interpolation-using-a-route-speed-model.html#cb77-1" aria-hidden="true" tabindex="-1"></a>corner_speed_model <span class="ot">=</span> <span class="cf">function</span>(route_convexity,</span>
 <span id="cb77-2"><a href="interpolation-using-a-route-speed-model.html#cb77-2" aria-hidden="true" tabindex="-1"></a>                               <span class="at">invisible_speeds =</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="dv">40</span>, <span class="dv">50</span>, <span class="dv">60</span>, <span class="dv">70</span>, <span class="dv">85</span>,</span>
-<span id="cb77-3"><a href="interpolation-using-a-route-speed-model.html#cb77-3" aria-hidden="true" tabindex="-1"></a>                                                    <span class="dv">100</span>, <span class="dv">115</span>, <span class="dv">120</span>, <span class="dv">130</span>, <span class="dv">170</span>)){</span>
-<span id="cb77-4"><a href="interpolation-using-a-route-speed-model.html#cb77-4" aria-hidden="true" tabindex="-1"></a>  invisible_bins <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">15</span>, <span class="dv">20</span>, <span class="fl">27.5</span>, <span class="dv">35</span>,</span>
-<span id="cb77-5"><a href="interpolation-using-a-route-speed-model.html#cb77-5" aria-hidden="true" tabindex="-1"></a>                    <span class="dv">45</span>, <span class="dv">60</span>, <span class="fl">77.5</span>, <span class="dv">100</span>, <span class="dv">175</span>, <span class="cn">Inf</span>)</span>
-<span id="cb77-6"><a href="interpolation-using-a-route-speed-model.html#cb77-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-7"><a href="interpolation-using-a-route-speed-model.html#cb77-7" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_ci <span class="ot">=</span> <span class="fu">cut</span>(route_convexity<span class="sc">$</span>radius,</span>
-<span id="cb77-8"><a href="interpolation-using-a-route-speed-model.html#cb77-8" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">breaks =</span> invisible_bins,</span>
-<span id="cb77-9"><a href="interpolation-using-a-route-speed-model.html#cb77-9" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">labels =</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(invisible_bins)<span class="sc">-</span><span class="dv">1</span>),</span>
-<span id="cb77-10"><a href="interpolation-using-a-route-speed-model.html#cb77-10" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">ordered_result=</span><span class="cn">TRUE</span>)</span>
-<span id="cb77-11"><a href="interpolation-using-a-route-speed-model.html#cb77-11" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-12"><a href="interpolation-using-a-route-speed-model.html#cb77-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Speeds in km/h</span></span>
-<span id="cb77-13"><a href="interpolation-using-a-route-speed-model.html#cb77-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">#invisible_speeds = c(10, 40, 50, 60, 70, 80,</span></span>
-<span id="cb77-14"><a href="interpolation-using-a-route-speed-model.html#cb77-14" aria-hidden="true" tabindex="-1"></a>  <span class="co">#                     95, 110, 120, 130, 180)</span></span>
-<span id="cb77-15"><a href="interpolation-using-a-route-speed-model.html#cb77-15" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb77-3"><a href="interpolation-using-a-route-speed-model.html#cb77-3" aria-hidden="true" tabindex="-1"></a>                                                    <span class="dv">100</span>, <span class="dv">115</span>, <span class="dv">120</span>, <span class="dv">130</span>, <span class="dv">170</span>),</span>
+<span id="cb77-4"><a href="interpolation-using-a-route-speed-model.html#cb77-4" aria-hidden="true" tabindex="-1"></a>                               <span class="at">speed_modifier =</span> <span class="dv">0</span>){</span>
+<span id="cb77-5"><a href="interpolation-using-a-route-speed-model.html#cb77-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-6"><a href="interpolation-using-a-route-speed-model.html#cb77-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Provide a simple means of increasing the cornering speeds</span></span>
+<span id="cb77-7"><a href="interpolation-using-a-route-speed-model.html#cb77-7" aria-hidden="true" tabindex="-1"></a>  invisible_speeds <span class="ot">=</span> invisible_speeds <span class="sc">+</span> speed_modifier</span>
+<span id="cb77-8"><a href="interpolation-using-a-route-speed-model.html#cb77-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-9"><a href="interpolation-using-a-route-speed-model.html#cb77-9" aria-hidden="true" tabindex="-1"></a>  invisible_bins <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">15</span>, <span class="dv">20</span>, <span class="fl">27.5</span>, <span class="dv">35</span>,</span>
+<span id="cb77-10"><a href="interpolation-using-a-route-speed-model.html#cb77-10" aria-hidden="true" tabindex="-1"></a>                    <span class="dv">45</span>, <span class="dv">60</span>, <span class="fl">77.5</span>, <span class="dv">100</span>, <span class="dv">175</span>, <span class="cn">Inf</span>)</span>
+<span id="cb77-11"><a href="interpolation-using-a-route-speed-model.html#cb77-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-12"><a href="interpolation-using-a-route-speed-model.html#cb77-12" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_ci <span class="ot">=</span> <span class="fu">cut</span>(route_convexity<span class="sc">$</span>radius,</span>
+<span id="cb77-13"><a href="interpolation-using-a-route-speed-model.html#cb77-13" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">breaks =</span> invisible_bins,</span>
+<span id="cb77-14"><a href="interpolation-using-a-route-speed-model.html#cb77-14" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">labels =</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(invisible_bins)<span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb77-15"><a href="interpolation-using-a-route-speed-model.html#cb77-15" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">ordered_result=</span><span class="cn">TRUE</span>)</span>
 <span id="cb77-16"><a href="interpolation-using-a-route-speed-model.html#cb77-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-17"><a href="interpolation-using-a-route-speed-model.html#cb77-17" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-18"><a href="interpolation-using-a-route-speed-model.html#cb77-18" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_sp <span class="ot">=</span> <span class="fu">cut</span>(route_convexity<span class="sc">$</span>radius,</span>
-<span id="cb77-19"><a href="interpolation-using-a-route-speed-model.html#cb77-19" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">breaks =</span> invisible_bins,</span>
-<span id="cb77-20"><a href="interpolation-using-a-route-speed-model.html#cb77-20" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">labels =</span> invisible_speeds,</span>
-<span id="cb77-21"><a href="interpolation-using-a-route-speed-model.html#cb77-21" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">ordered_result=</span><span class="cn">TRUE</span>)</span>
+<span id="cb77-17"><a href="interpolation-using-a-route-speed-model.html#cb77-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Speeds in km/h</span></span>
+<span id="cb77-18"><a href="interpolation-using-a-route-speed-model.html#cb77-18" aria-hidden="true" tabindex="-1"></a>  <span class="co">#invisible_speeds = c(10, 40, 50, 60, 70, 80,</span></span>
+<span id="cb77-19"><a href="interpolation-using-a-route-speed-model.html#cb77-19" aria-hidden="true" tabindex="-1"></a>  <span class="co">#                     95, 110, 120, 130, 180)</span></span>
+<span id="cb77-20"><a href="interpolation-using-a-route-speed-model.html#cb77-20" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb77-21"><a href="interpolation-using-a-route-speed-model.html#cb77-21" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb77-22"><a href="interpolation-using-a-route-speed-model.html#cb77-22" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-23"><a href="interpolation-using-a-route-speed-model.html#cb77-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Cast speed as factor, via character, to integer</span></span>
-<span id="cb77-24"><a href="interpolation-using-a-route-speed-model.html#cb77-24" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_sp <span class="ot">=</span> <span class="fu">as.integer</span>(<span class="fu">as.character</span>(route_convexity<span class="sc">$</span>invisible_sp))</span>
-<span id="cb77-25"><a href="interpolation-using-a-route-speed-model.html#cb77-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb77-26"><a href="interpolation-using-a-route-speed-model.html#cb77-26" aria-hidden="true" tabindex="-1"></a>  route_convexity</span>
-<span id="cb77-27"><a href="interpolation-using-a-route-speed-model.html#cb77-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb77-23"><a href="interpolation-using-a-route-speed-model.html#cb77-23" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_sp <span class="ot">=</span> <span class="fu">cut</span>(route_convexity<span class="sc">$</span>radius,</span>
+<span id="cb77-24"><a href="interpolation-using-a-route-speed-model.html#cb77-24" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">breaks =</span> invisible_bins,</span>
+<span id="cb77-25"><a href="interpolation-using-a-route-speed-model.html#cb77-25" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">labels =</span> invisible_speeds,</span>
+<span id="cb77-26"><a href="interpolation-using-a-route-speed-model.html#cb77-26" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">ordered_result=</span><span class="cn">TRUE</span>)</span>
+<span id="cb77-27"><a href="interpolation-using-a-route-speed-model.html#cb77-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-28"><a href="interpolation-using-a-route-speed-model.html#cb77-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Cast speed as factor, via character, to integer</span></span>
+<span id="cb77-29"><a href="interpolation-using-a-route-speed-model.html#cb77-29" aria-hidden="true" tabindex="-1"></a>  route_convexity<span class="sc">$</span>invisible_sp <span class="ot">=</span> <span class="fu">as.integer</span>(<span class="fu">as.character</span>(route_convexity<span class="sc">$</span>invisible_sp))</span>
+<span id="cb77-30"><a href="interpolation-using-a-route-speed-model.html#cb77-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-31"><a href="interpolation-using-a-route-speed-model.html#cb77-31" aria-hidden="true" tabindex="-1"></a>  route_convexity</span>
+<span id="cb77-32"><a href="interpolation-using-a-route-speed-model.html#cb77-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Applying the speed model to our route gives us a corner index and notional target speed for each segment:</p>
 <div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb78-1"><a href="interpolation-using-a-route-speed-model.html#cb78-1" aria-hidden="true" tabindex="-1"></a>route_convexity <span class="ot">=</span> route_convexity <span class="sc">%&gt;%</span> <span class="fu">corner_speed_model</span>()</span>
 <span id="cb78-2"><a href="interpolation-using-a-route-speed-model.html#cb78-2" aria-hidden="true" tabindex="-1"></a></span>

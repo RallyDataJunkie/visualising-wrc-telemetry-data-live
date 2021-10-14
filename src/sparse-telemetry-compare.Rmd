@@ -467,7 +467,12 @@ We can now generate the cornering speed model. The corner speed model generates 
 ```{r}
 corner_speed_model = function(route_convexity,
                                invisible_speeds = c(20, 40, 50, 60, 70, 85,
-                                                    100, 115, 120, 130, 170)){
+                                                    100, 115, 120, 130, 170),
+                               speed_modifier = 0){
+  
+  # Provide a simple means of increasing the cornering speeds
+  invisible_speeds = invisible_speeds + speed_modifier
+  
   invisible_bins = c(0, 10, 15, 20, 27.5, 35,
                     45, 60, 77.5, 100, 175, Inf)
 

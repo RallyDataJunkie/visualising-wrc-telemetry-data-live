@@ -419,8 +419,11 @@ We already have a stage route available, but let's just recap how to generate th
 #window = 20
 route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>% 
                       mutate(radius = curvatures(.)) %>% 
-                      corner_speed_model() %>% 
+                      corner_speed_model(speed_modifier=10) %>% 
                       acceleration_model(acc=0.1, dec=0.05)
+
+# Generate speed points at same sample distances as in speed model
+sample_points = route_convexity$cum_dist
 ```
 
 To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.
@@ -437,9 +440,6 @@ buffered_telem_test_utm = get_route_telem(stage_route_utm,
 trj_buffered_test = buffered_telem_test_utm %>%
                         telemetry_full_trajectory() %>%
                         mutate(dist_into_route = dist_into_route(., stage_route_utm))
-
-# Generate speed points at same sample distances as in speed model
-sample_points = route_convexity$cum_dist
 
 # Estimate based on telemetry
 test_speeds = ts_estimator(trj_buffered_test,
@@ -499,7 +499,7 @@ speed_correlation
 
 The model is a bit rough, bit captures some of the major features, and gives us a crude approximation of speed.
 
-Perhpaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let's see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:
+Perhaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let's see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:
 
 ```{r warning=FALSE, message=FALSE}
 ggplot() + 
@@ -513,14 +513,17 @@ ggplot() +
 
 There appear to be two types of error in the prediction: a general trend component error, where the prediction appears to drift consistently from the actual time into stage as captured from telemetry; and a possible difference in "shape" of the lines.
 
-We can detrend the prediction error to get a feel how the "shape" of the predicted time drifts from the actual time. One way of detrending the data is to create a linear model of it and then inspect the residual error around that model.
+We can modify the model to account for the linear dirft by tweaking the cornering speed model. A trivial way to do this is to fettle the `speed_modifier` parameter in the `corner_speed_model()` function.
 
+We can detrend the prediction error to get a feel how the "shape" of the predicted time drifts from the actual time. One way of detrending the data is to create a linear model of it and then inspect the residual error around that model.
 
 ```{r warning=FALSE, message=FALSE}
 linear_time_model = lm((test_times - route_convexity$acc_time) ~ c(1:length(test_times)))
 
 plot(resid(linear_time_model), type="l") 
 ```
+
+By inspection of the elevation map for this stage, we may be lossing time in the model compared to the actual telemetry on downhill sections. The speed model does not currently take elevation / elevation change into account. But perhaps it should, particularly on downhill sections?
 
 Another approach is to normalise the curves and then compare them:
 
