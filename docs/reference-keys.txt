@@ -34,5 +34,5 @@ looking-at-braking-behaviour
 throttle-comparison
 comparing-times-into-stage
 correlating-telemetry-traces
-validating-the-speed-model
 smoothing-a-route
+validating-the-speed-model

@@ -407,19 +407,53 @@ ccf(ogier_brk_est, evans_brk_est)
 
 *It occurs to me that if we use a high resolution sample, for example at the level of 1m, we might be able to detect consistent areas where one driver brakes sooner than another. This may be hard to spot in rally telemetry, but it may be something observable in circuit races over many laps of the same circuit.*
 
+# Smoothing a Route
+
+If we have a route made up from a set of points, we find an smooth trajectory through them using a function such as a the `smoothr::smooth()` function. The `trajr` package also has a smoothing function in the form of `TrajSmoothSG()`.
+
+```{r}
+smooth_route_utm = smoothr::smooth(stage_route_utm,
+                                   method = "ksmooth")
+```
+
+We can preview the route to on an interactive map so we can zoom in to see where the smooth route might diverge from the provided route.
+
+```{r}
+smooth_route = st_transform(smooth_route_utm,
+                            crs = st_crs(original_crs)) %>% st_coordinates()
+smooth_route = smooth_route[,1:2]
+
+official_route = st_transform(stage_route_utm,
+                              crs = st_crs(original_crs)) %>% st_coordinates()
+official_route = official_route[,1:2]
+
+leaflet(smooth_route) %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addPolylines()
+```
+
+However, the smoothing is based on being provided with an actual route. If we have data from multiple drivers representing multiple routes, whilst we can visualise the route as a set of points and "see" the route they tend to follow, it's hard to see *a priori* how we might order those points into an approximate route given that the distance along route may vary slightly and the time along route at particular locations is also likely to vary.
+
+Thinking a bit more ecologically, we might perhaps consider a group of animals following the same (ish) path over a period of time and then trying to work out the route they take from those separate sets of sample data. How do the ecologists do that?
+
+If we know the start and end of the route are nominally at the same location, we can normalise the route length of multiple routes, map equidistant points onto each other, and then take the average. For example, this solution: https://stackoverflow.com/a/65341730/454773 . See also https://en.wikipedia.org/wiki/Dynamic_time_warping and https://dynamictimewarping.github.io/r/ .
 
 # Validating the Speed Model 
 
 We can use the telemetry from a route to validate (or not!) our speed model. So let's have a go at that...
 
-We already have a stage route available, but let's just recap how to generate that from a stage route:
+We already have a stage route available, so let's recap how to generate the speed model from a stage route. To ty to improve the model, we can use the smmoothed route. For many parts of the stage, the smoothed route is likely to give a better estimate of the line. However, for certain stage features, such as hairpins, the smoothing may be over-optimistic and take an impossible line.
 
 ```{r warning=FALSE, message=FALSE, results='hide'}
 #stepdist = 10
 #window = 20
-route_convexity = get_route_convexity(stage_route_utm, stepdist, window) %>% 
+
+# Original route: stage_route_utm
+# Smooth route: smooth_route_utm
+route_ = smooth_route_utm
+route_convexity = get_route_convexity(route_, stepdist, window) %>% 
                       mutate(radius = curvatures(.)) %>% 
-                      corner_speed_model(speed_modifier=10) %>% 
+                      corner_speed_model(speed_modifier=-1) %>% 
                       acceleration_model(acc=0.1, dec=0.05)
 
 # Generate speed points at same sample distances as in speed model
@@ -553,21 +587,4 @@ ggplot() +
 ```
 
 
-# Smoothing a Route
 
-If we have a route made up from a set of points, we find an smooth trajectory through them using a function such as a the `smoothr::smooth()` function. The `trajr` package also has a smoothing function in the form of `TrajSmoothSG()`.
-
-```{r}
-#smoothr_route_segment = smoothr::smooth(route_segment,
-#                                        method = "ksmooth")
-
-#plot(st_geometry(route_segment), col = 'grey', lwd = 3)
-#plot(st_geometry(smoothr_route_segment),
-#     col = "red", add = TRUE)
-```
-
-However, the smoothing is based on being provided with an actual route. If we have data from multiple drivers representing multiple routes, whilst we can visualise the route as a set of points and "see" the route they tend to follow, it's hard to see *a priori* how we might order those points into an approximate route given that the distance along route may vary slightly and the time along route at particular locations is also likely to vary.
-
-Thinking a bit more ecologically, we might perhaps consider a group of animals following the same (ish) path over a period of time and then trying to work out the route they take from those separate sets of sample data. How do the ecologists do that?
-
-If we know the start and end of the route are nominally at the same location, we can normalise the route length of multiple routes, map equidistant points onto each other, and then take the average. For example, this solution: https://stackoverflow.com/a/65341730/454773 . See also https://en.wikipedia.org/wiki/Dynamic_time_warping and https://dynamictimewarping.github.io/r/ .
