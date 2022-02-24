@@ -67,6 +67,7 @@ The data is available in the form of a simple CSV data file.
 The data is presented in a reverse chronological order, but it is more natural for us to present it in chronological (increasing time) order.
 
 ```{r load_telem_demo}
+path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
 telem_df_min = read.csv(file.path(path, "df_telemetrydata_SS7_Evans.csv") )  %>%
                   map_df(rev)
 

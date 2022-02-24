@@ -587,4 +587,104 @@ ggplot() +
 ```
 
 
+# Numbering Corners
 
+```{r}
+cornerer = function (df, slight_conv=0.02, closeby=25){
+  df %>%
+    mutate(straightish =  (abs(ConvexityIndex) < slight_conv)) %>%
+    mutate(dirChange = (sign(ConvexityIndex) != sign(lag(ConvexityIndex,2))
+                          ) 
+   #        | (straightish & !lag(straightish) ) | (!straightish & lag(straightish)) 
+   ) %>%
+
+    mutate(turn= ifelse( straightish, "S", ifelse(ConvexityIndex<0, "L", "R"))) %>%
+     # If we are on R or L and then we go to S11, we need call a slight L or R
+    mutate(turn = ifelse(turn!="S" & lag(turn)=="S", ifelse(turn=="R", "L","R"), turn)) %>%
+    mutate(s2 = replace_na(turn!=lag(turn), TRUE) ) %>% 
+    mutate(streak_id=cumsum(s2)) %>% group_by(streak_id) %>%  mutate(streak=row_number()) %>%
+ungroup()
+}
+
+xx = cornerer(route_convexity)
+
+yy = xx %>% group_by(streak_id) %>%
+   mutate(invisible_ci = min(invisible_ci), kmsection=min(kmsection)) %>%
+  mutate(x=head(Midpoint_X,1), y=head(Midpoint_Y,1)) %>%
+  filter(row_number()==n())
+  #mutate(txt = ifelse(invisible_ci>9 & turn!="S",
+  #                    paste("slight ",turn, as.character(10*streak)),
+  #                    ifelse(turn=="S", as.character(10*streak), "")),
+  #       txt=ifelse(paste(txt, paste0(invisible_ci, streak, turn), sep=", "))
+  #       )
+#
+xx
+```
+
+```{r}
+xx %>% filter(kmsection==2) %>% select(straightish, dirChange, turn, invisible_ci)
+```
+
+
+```{r}
+yy = yy %>% mutate(txt = ifelse(invisible_ci>9 & turn=="S",paste(streak*10),
+                           ifelse(invisible_ci>9, paste("slight",turn, streak*10),
+                                  paste(paste0(streak, invisible_ci), turn)))) %>%
+  select(kmsection, invisible_ci, turn, streak_id, streak, txt, x, y)
+#
+zz= yy %>% group_by(kmsection) %>% 
+  summarise(txt=paste(txt, collapse=", "))
+zz
+#yy
+```
+
+```{r}
+tmp_data = yy %>% filter(kmsection==2)
+tmp_data2 = xx %>% filter(kmsection==2)
+ggplot(tmp_data2) + geom_text(data=head(tmp_data2, 1),aes(x=Midpoint_X, y=Midpoint_Y),label="X" , color="green") +
+  geom_path(aes(x=Midpoint_X, y=Midpoint_Y)) +
+  ggrepel::geom_text_repel(data=tmp_data, aes(x=x, y=y, label=txt), size=2)+
+  coord_fixed() + geom_point(data=tmp_data, aes(x=x, y=y)) + xlim(min(tmp_data2$Midpoint_X)-100, max(tmp_data2$Midpoint_X)+100)
+```
+
+
+```{r}
+zz[[2,'txt']]
+```
+
+
+```{r}
+
+ggplot(tmp_data, aes(x=x, y=y))+
+  geom_text(data=head(tmp_data,1), label="X") +
+  geom_path() +
+  coord_fixed() +geom_point(color='red', size=1) 
+```
+
+
+
+
+ggplot(data=trj[zoom1,],
+       aes(x=x, y=y)) + geom_path(color='grey') + coord_sf() +
+  ggrepel::geom_text_repel(data=tight_corners[tight_corners_zoom1,],
+                           aes(label = dist,
+                               x=Midpoint_X, y=Midpoint_Y),
+                           size=3) +
+  geom_point(data=tight_corners[tight_corners_zoom1,],
+             aes(x=Midpoint_X, y=Midpoint_Y,
+                 color= (firstish) ), size=1) +
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 45))
+```{r}
+ggplot() +
+  #geom_point(data=xx,
+  #           aes(x=Midpoint_X, y=Midpoint_Y,
+  #                ), color='pink', size=1) +
+  geom_point(data=xx,
+             aes(x=Midpoint_X, y=Midpoint_Y,color=turn), size=0.2) +
+  geom_point(data=xx %>% filter(s2==TRUE),
+             aes(x=Midpoint_X, y=Midpoint_Y
+                  ),color="black", size=0.1) +
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 45))
+```
