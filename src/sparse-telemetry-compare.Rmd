@@ -72,7 +72,7 @@ Load in data for a handful of drivers:
 
 ```{r}
 # Path to the telem data
-path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
+path = "./2021_secto_Rally_Finland"
 ```
 
 TO DO  - set the origin as the dummy origin

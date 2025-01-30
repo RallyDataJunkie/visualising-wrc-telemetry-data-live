@@ -1,4 +1,16 @@
-```{r setup_load_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+---
+title: A Quarto Live Document
+engine: knitr
+format: live-html
+resources:
+  - resources
+  - 2021_secto_Rally_Finland
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+
+```{webr setup_load_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
 library(knitr)
 library(tidyr)
 library(purrr)
@@ -7,9 +19,12 @@ library(sf)
 library(lubridate)
 library(ggplot2)
 library(kableExtra)
-
 knitr.duplicate.label = "allow"
 knitr::opts_chunk$set(fig.path = "images/")
+```
+
+```{webr setup_load_telem_utils, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+source("resources/telemetry_tools.R")
 ```
 
 # Introducing WRC Telemetry
@@ -29,7 +44,7 @@ The GPS data is provided as a set of latitude and longitude co-ordinates. For va
 
 The following function identifies the correct UTM region for managing the conversion.
 
-```{r load_spatial_libs}
+```{webr load_spatial_libs}
 library(sf)
 
 lonlat2UTM_hemisphere <- function(lonlat) {
@@ -49,13 +64,13 @@ lonlat2UTMzone = function(lonlat) {
 
 Create a simple latitude/longitude CRS (co-ordinate reference system) string to specify the CRS for use with simple lat/long data:
 
-```{r}
+```{webr}
 latlon_crs = 4326
 ```
 
 We can also set the timezone. This might be done explicitly, or from a location co-ordinate using the *R* `lutz` package.
 
-```{r}
+```{webr}
 timezone = "Europe/Helsinki"
 ```
 
@@ -66,8 +81,8 @@ The data is available in the form of a simple CSV data file.
 
 The data is presented in a reverse chronological order, but it is more natural for us to present it in chronological (increasing time) order.
 
-```{r load_telem_demo}
-path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
+```{webr load_telem_demo}
+path = "./2021_secto_Rally_Finland"
 telem_df_min = read.csv(file.path(path, "df_telemetrydata_SS7_Evans.csv") )  %>%
                   map_df(rev)
 
@@ -78,7 +93,7 @@ kable(head(telem_df_min), format = "html") %>%
 
 We note quite a few null columns in there, so let's clean those out of the dataframe too:
 
-```{r min_telem_data_preview}
+```{webr min_telem_data_preview}
 telem_df_min = telem_df_min %>%
                   select(-c(accx, accy, altitude, brk, driverid,
                             gear, rpm, throttle, track)) %>%
@@ -95,7 +110,7 @@ We can perform a small amount of cleaning on the data to remove any rows where t
 
 To better manage the timing components, we can cast the universal time stamp (in milliseconds) to a datetime stamp, ensuring we also set the correct time zone along the way. A `delta_s` columns is also used to capture the time difference (in seconds) between sample points.
 
-```{r telem_demo_clean, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE }
+```{webr telem_demo_clean, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE }
 telem_df_min = telem_df_min %>%
                   drop_na(lon, lat) %>%
                   st_as_sf(coords = c("lon","lat")) %>%
@@ -119,20 +134,11 @@ kable(head(telem_df_min), format = "html") %>%
   kableExtra::scroll_box(width = "100%")
 ```
 
-For convenience, let's also generate a UTM projection of this spatial features dataframe:
-
-```{r}
-# Generate a UTM projection of the route telemetry
-telem_df_min_utm = telem_df_min %>%
-                      st_transform(crs = st_crs(utm_proj4_string))
-```
-
-
 ## Visual Preview of the Telemetry Route Data
 
 We can preview the route on an interactive map using the `leaflet` package, casting the route data to a set of paired co-ordinates:
 
-```{r preview_telem_test_map}
+```{webr preview_telem_test_map}
 library(leaflet)
 
 tmp_route <- telem_df_min %>% st_coordinates() 
@@ -150,11 +156,11 @@ The "live" telemetry includes the road section data. To access the data for just
 
 To make most effective use of the telemetry data, we want to be able to identify the stage section data as well as the road section data. We can use the official stage route to filter data points from a set of location data that includes road section locations to just those points that lay along a route.
 
-```{r get_stage_route_data}
+```{webr get_stage_route_data}
 # Path to the route telemetry data
-path = "../../wrcplus/notebooks/2021_secto_Rally_Finland"
+path = "./2021_secto_Rally_Finland"
 
-geojson_filename = "data/finland_2021.geojson"
+geojson_filename = paste0(path, "/finland_2021.geojson")
 ```
 
 *For more information on analysing rally stage routes, see [__Visualising WRC Rally Stages With rayshader and R__](https://rallydatajunkie.com/visualising-rally-stages).*
@@ -163,14 +169,14 @@ geojson_filename = "data/finland_2021.geojson"
 
 Let's load in some route data:
 
-```{r}
+```{webr}
 geojson_sf = sf::st_read(geojson_filename)
 ```
 
 
 Let's also clean the data a little by removing the reference to the Z dimension, making a note of original co-ordinate reference scheme, and generating references to the route in both latlong and UTM forms:
 
-```{r process_stage_route_data}
+```{webr process_stage_route_data}
 stage_route  = geojson_sf[7,]  %>% st_zm()
 
 # Grab a copy of the original projection
@@ -194,7 +200,7 @@ stage_route_utm = st_transform(stage_route,
 
 Let's plot the telemetry data on a map, and then compare it to the stage route data:
 
-```{r plot_stage_route_and_telem}
+```{webr plot_stage_route_and_telem}
 leaflet() %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addPolylines(data=tmp_route, color = "red", weight = 5) %>%
@@ -210,7 +216,7 @@ We can filter the telemetry data to just the data points that lay on the route b
 
 Let's create a buffered area 100m wide around the route:
 
-```{r create_buffered_stage_route}
+```{webr create_buffered_stage_route}
 # Generate buffered routes in UTM and longlat projections
 buffer_margin_100m = units::set_units(100, m)
 
@@ -225,7 +231,9 @@ leaflet(buffered_route) %>%
 
 To simplify distance calculations, where we are likely to want to work in units of meters, generate a UTM projection of the route telemetry data:
 
-```{r route_telem_intersect_utm, message=FALSE}
+```{webr route_telem_intersect_utm, message=FALSE}
+route_telem = telem_df_min
+
 # Also generate a UTM projection of the minimal route telemetry
 route_telem_utm = st_transform(route_telem,
                                crs = st_crs(utm_proj4_string))
@@ -233,7 +241,7 @@ route_telem_utm = st_transform(route_telem,
 
 Let's see how it looks:
 
-```{r echo=FALSE}
+```{webr echo=FALSE}
 kable(head(route_telem), format = "html") %>%
   kable_styling() %>%
   kableExtra::scroll_box(width = "100%")
@@ -241,18 +249,18 @@ kable(head(route_telem), format = "html") %>%
 
 We can now find the  intersection of the buffered stage route and the original telemetry spatial features dataframe. The `st_intersects()` function prefers a UTM projection, so let's use that:
 
-```{r intersect_route_and_telem}
+```{webr intersect_route_and_telem}
 #Find the intersecting points
-route_telem_intersect = st_intersects(buffered_route_utm, telem_df_min_utm)
+route_telem_intersect = st_intersects(buffered_route_utm, route_telem_utm)
 
 # And then filter on those points
 # Also nullify the Z dimension
-route_telem = telem_df_min[route_telem_intersect[[1]],]  %>% st_zm()
+route_telem = route_telem_utm[route_telem_intersect[[1]],]  %>% st_zm()
 ```
 
 Let's preview the first few rows of that data:
 
-```{r echo=FALSE}
+```{webr echo=FALSE}
 kable(head(route_telem), format = "html") %>%
   kable_styling() %>%
   kableExtra::scroll_box(width = "100%")
@@ -262,7 +270,10 @@ If we assume that the `kms` column is the distance into stage, we see that it ap
 
 But at least we have something! If we now plot the resulting telemetry data points, we see have limited our selection to just the sample points that fall within the buffered stage route area:
 
-```{r plot_route_telem_intersect}
+```{webr plot_route_telem_intersect}
+# TO DO  - error here
+# Warning: sf layer is not long-lat data
+# But we have managed to plot leaflet routes previously...
 leaflet(route_telem )  %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addCircleMarkers()
@@ -284,7 +295,22 @@ One thing to note about the `rgeos` package is that it works with `Spatial` (`sp
 
 If we also use UTM co-ordinates, the distance along the route is given in meters:
 
-```{r find_points_on_route}
+?? MAYBE:
+
+route_sf <- st_as_sf(stage_route_utm)
+points_sf <- st_as_sf(min_pois_points_utm_sp)
+
+# Project points onto the line
+dist_points <- st_line_sample(route_sf, 
+                            density = 1) %>% # Creates points along the line
+  st_nearest_points(points_sf) %>% # Find nearest points between line points and input points
+  st_length()
+
+
+```{webr find_points_on_route}
+# NOT FOUND? TO DO
+library(rgeos)
+
 min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
                       crs=st_crs(route_telem_utm))
 
@@ -296,6 +322,9 @@ min_pois_points_utm_sp = as(min_pois_points_utm, 'Spatial')
 
 # Find the distance along the route of the point on the route
 # nearest to each telemetry sample
+# st_line_project in sf for a single point?
+# https://github.com/r-spatial/sf/issues/2291
+# or st_nearest_points ?
 dist_points = rgeos::gProject(as(stage_route_utm, "Spatial"),
                 min_pois_points_utm_sp, normalized = FALSE)
 
@@ -307,7 +336,7 @@ route_telem_utm$dist =  dist_points
 
 How does the data look now?
 
-```{r echo=FALSE}
+```{webr echo=FALSE}
 kable(head(route_telem_utm), format = "html") %>%
   kable_styling() %>%
   kableExtra::scroll_box(width = "100%")
@@ -317,7 +346,44 @@ We might thinks of each of these points as notional split points at particular d
 
 it is also worth noting that the `rgeos::gInterpolate()` function complements `rgeos::gProject()` by providing a function that can also return a location a specified distance along a line:
 
-```{r find_point_5km_in, warning=FALSE}
+
+TO DO
+# Assuming stage_route_utm is your route linestring
+# Convert to sf if not already
+route_sf <- st_as_sf(stage_route_utm)
+
+# Create point at specific distance along the line
+sample_point_sf_utm <- st_line_sample(route_sf, 
+                                     distance = 5000) %>% # Distance in meters
+                      st_cast("POINT") # Convert from MULTIPOINT to POINT if needed
+
+# Transform to latlong CRS
+sample_point_sf <- sample_point_sf_utm %>% 
+                   st_transform(crs = st_crs(latlon_crs))
+
+BUT distance=5000 is wrong; instead use density, but set how?
+
+
+instead
+
+# Get point at 5000m along the line
+sample_point_sf_utm <- st_line_interpolate_point(route_sf, dist = 5000/st_length(route_sf))
+
+# Transform to latlong CRS
+sample_point_sf <- sample_point_sf_utm %>% 
+                   st_transform(crs = st_crs(latlon_crs))
+
+"""CLAUDE:
+
+The key difference is that st_line_interpolate_point() expects the distance to be normalized (between 0 and 1), which is why we divide by the total length of the line. So:
+
+If you want a point 5000m along the line, use: dist = 5000/st_length(route_sf)
+If you want a point halfway along the line, use: dist = 0.5
+If you want a point 75% along the line, use: dist = 0.75
+
+This is different from st_line_sample() which is better for getting multiple points along a line at regular intervals using the density parameter.
+"""
+```{webr find_point_5km_in, warning=FALSE}
 sample_point_sp_utm = rgeos::gInterpolate(as(stage_route_utm, "Spatial"),
                                           5000, # Distance along route in meters
                                           normalized = FALSE)
@@ -332,7 +398,7 @@ sample_point_sf = sample_point_sf_utm %>% st_transform(crs = st_crs(latlon_crs))
 
 Let's see that point, 5km along the route:
 
-```{r preview_5km_in}
+```{webr preview_5km_in}
 leaflet() %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addPolylines(data=stage_route, color = "black", weight = 3) %>%
@@ -349,7 +415,7 @@ One approach would be to look to the timing and results data for data describing
 
 We can also set the time from a time passed as a string. For example:
 
-```{r}
+```{webr}
 explicit_time_origin = ymd_hms("2020-04-01 10:30:13", tz=timezone)
 ```
 
@@ -358,7 +424,7 @@ explicit_time_origin = ymd_hms("2020-04-01 10:30:13", tz=timezone)
 
 If we are missing timing data from the start of the run, *and* we assume that the run started exactly on the minute, we can round down the first sample time to get to the next nearest minute using the `lubridate::round_date()` function:
 
-```{r estimate_stage_start_time}
+```{webr estimate_stage_start_time}
 first_time = route_telem_utm[1,]$utc
 
 first_time_rounded = round_date(first_time, unit="1 minutes")
@@ -368,14 +434,14 @@ c(first_time, first_time_rounded)
 
 We can then use the rounded first time as a basis for a running stage time estimate by subtracting that time from the sample datetimes:
 
-```{r stage_time_process}
+```{webr stage_time_process}
 # Get stage time as a time object...
 route_telem_utm$roundeddelta_t = route_telem_utm$utc - first_time_rounded
 # And in seconds
 route_telem_utm$roundeddelta_s = as.double(route_telem_utm$roundeddelta_t)
 ```
 
-```{r echo=FALSE}
+```{webr echo=FALSE}
 kable(head(route_telem_utm), format = "html") %>%
   kable_styling() %>%
   kableExtra::scroll_box(width = "100%")
@@ -385,21 +451,21 @@ kable(head(route_telem_utm), format = "html") %>%
 
 Another approach to setting the origin is to not set one; or rather, to start the time series with a false origin, such as the first location point. The time into stage (from the false origin) can then be found by using the sample time of the first in-stage telemetry data point as the time origin set at that location.
 
-```{r}
+```{webr}
 false_origin_time = route_telem_utm$utc[1]
 false_origin_time
 ```
 
 And then generate deltas from that:
 
-```{r false_origin_delta}
+```{webr false_origin_delta}
 # Get stage time as a time object...
 route_telem_utm$falsedelta_t = route_telem_utm$utc - false_origin_time
 # And in seconds
 route_telem_utm$falsedelta_s = as.double(route_telem_utm$falsedelta_t)
 ```
 
-```{r}
+```{webr}
 kable(head(route_telem_utm %>% select(c(utc, roundeddelta_t, roundeddelta_s,
                                         falsedelta_t, falsedelta_s))),
       format = "html") %>%
@@ -414,7 +480,7 @@ This approach might also extended for use when comparing two or more drivers, by
 
 We can now plot the distance into stage and the stage time (as per the telemetry sample points) relative to each other.
 
-```{r preview_dist_into_stage}
+```{webr preview_dist_into_stage}
 ggplot(route_telem_utm) +geom_line(aes(x=dist, y=roundeddelta_s))
 ```
 
@@ -432,7 +498,7 @@ In order to compare times at the same location, as we do with official split tim
 
 One way of doing this is to generate an estimator function based on the time and distance data in the telemetry data frame.
 
-```{r estimate_stage_time}
+```{webr estimate_stage_time}
 # Estimate the time based on the distance into the route
 # Add in an origin time at the stage of the stage
 # If necessary, we could also add a crude acceleration effect
@@ -449,7 +515,7 @@ We can then use these estimator functions to estimate times at particular distan
 
 For example, let's create notional split points every 500 meters along the route, plotting both the predicted times and the actual times:
 
-```{r preview_stage_timedist_estimate}
+```{webr preview_stage_timedist_estimate}
 # Sample every 500m
 vals = seq(to=max(route_telem_utm$dist), by=500)
 

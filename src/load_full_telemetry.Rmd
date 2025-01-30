@@ -1,3 +1,6 @@
+---
+format: live-html
+---
 
 ```{r setup_load_full_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
 library(knitr)
