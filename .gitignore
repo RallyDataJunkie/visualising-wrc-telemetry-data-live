@@ -6,3 +6,7 @@
 src/_book
 src/images
 X2021*
+old-docs
+src/test_files
+dist
+
