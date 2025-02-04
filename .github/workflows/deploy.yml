@@ -32,9 +32,9 @@ jobs:
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Add Quarto extensions
-        run: |
-          quarto add r-wasm/quarto-live
+      #- name: Add Quarto extensions
+      #  run: |
+      #    quarto add r-wasm/quarto-live
 
       - name: Render Quarto site
         run: |
