@@ -25,3 +25,6 @@ plot(fit)
 ```
 
 ````
+
+quarto render load-telemetry.Rmd
+

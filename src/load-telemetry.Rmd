@@ -2,6 +2,7 @@
 title: A Quarto Live Document
 engine: knitr
 format: live-html
+code-annotations: select
 resources:
   - resources
   - 2021_secto_Rally_Finland
@@ -10,21 +11,37 @@ resources:
 {{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
 
 
-```{webr setup_load_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+This document is a "live" document that supports inline code execution using the in-browser `webR` environment.
+
+```{webr setup_load_telem}
+#| autorun: true
+#| runbutton: false
+#| output: false
+# This cell automatically runs
+# and loads in required packages
 library(knitr)
 library(tidyr)
 library(purrr)
 library(dplyr)
 library(sf)
 library(lubridate)
-library(ggplot2)
+library(ggplot2) #charts
 library(kableExtra)
+library(sf) # Spatial features
+library(lutz) # Time zones
+library(leaflet) # Mapping
+
 knitr.duplicate.label = "allow"
 knitr::opts_chunk$set(fig.path = "images/")
+
+# Load in some local utility functions
+source("resources/telemetry_tools.R")
 ```
 
-```{webr setup_load_telem_utils, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
-source("resources/telemetry_tools.R")
+```{webr}
+#| persist: true
+# We can define particular cells that persist changes
+# if you run the code cell...
 ```
 
 # Introducing WRC Telemetry
@@ -32,7 +49,6 @@ source("resources/telemetry_tools.R")
 Whilst a rally is in progress, a limited amount of telemetry is available from the live mapping facility. This comes in the form of GPS location data for each vehicle at a low sample rate. This data can be collected and used in real time to give us a means of identifying approximately where on a stage a driver might have lost time compared to another driver. Essentially, we can use the data to create effective split points every 200m or so along a rally stage, rather than every 5km. In addition, we can use the data to identify whether a car has stopped on a road section, and for how long.
 
 More detailed telemetry data can be found on the WRC+ website several hours after a stage has run. This is at a much higher sample rate and includes speed, RPM, throttle and brake data. This allows us to make basic comparisons of drivers' actual performance on a stage at the end of each day of running.
-
 
 # Loading the Live Telemetry Route Data
 
@@ -45,7 +61,6 @@ The GPS data is provided as a set of latitude and longitude co-ordinates. For va
 The following function identifies the correct UTM region for managing the conversion.
 
 ```{webr load_spatial_libs}
-library(sf)
 
 lonlat2UTM_hemisphere <- function(lonlat) {
     ifelse(lonlat[1] > 0, "north", "south")
@@ -118,7 +133,6 @@ telem_df_min = telem_df_min %>%
 
 
 # Automatically set the timezone
-library(lutz)
 timezone_lookup = tz_lookup(telem_df_min[1]$geometry[1],
                             method = "accurate") #by default: fast
 
@@ -139,8 +153,6 @@ kable(head(telem_df_min), format = "html") %>%
 We can preview the route on an interactive map using the `leaflet` package, casting the route data to a set of paired co-ordinates:
 
 ```{webr preview_telem_test_map}
-library(leaflet)
-
 tmp_route <- telem_df_min %>% st_coordinates() 
 
 leaflet(tmp_route) %>% 
@@ -251,11 +263,14 @@ We can now find the  intersection of the buffered stage route and the original t
 
 ```{webr intersect_route_and_telem}
 #Find the intersecting points
-route_telem_intersect = st_intersects(buffered_route_utm, route_telem_utm)
+route_telem_intersect_utm = st_intersects(buffered_route_utm, route_telem_utm)
 
 # And then filter on those points
 # Also nullify the Z dimension
-route_telem = route_telem_utm[route_telem_intersect[[1]],]  %>% st_zm()
+route_telem_utm = route_telem_utm[route_telem_intersect_utm[[1]],] %>% st_zm() 
+
+route_telem = route_telem_utm %>% st_transform(crs = latlon_crs) 
+
 ```
 
 Let's preview the first few rows of that data:
@@ -271,9 +286,6 @@ If we assume that the `kms` column is the distance into stage, we see that it ap
 But at least we have something! If we now plot the resulting telemetry data points, we see have limited our selection to just the sample points that fall within the buffered stage route area:
 
 ```{webr plot_route_telem_intersect}
-# TO DO  - error here
-# Warning: sf layer is not long-lat data
-# But we have managed to plot leaflet routes previously...
 leaflet(route_telem )  %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addCircleMarkers()
@@ -287,29 +299,20 @@ If we know the time of day when a drive starts a stage, we can find the differen
 
 When split times are recorded, we know exactly where the car was at that point in time: it was at the split point location. So how might we determine where a car is on a route that acts as a fair basis for comparison.
 
-One way is to create notional split points at known distances along the actual route. The `rgeos::gProject()` function finds the points along the stage route that are nearest to the telemetry route points. Specifically, the function returns the distance along the route of the point on the route nearest to a provided location.
+One way is to create notional split points at known distances along the actual route. The `rgeos::gProject()` function finds the points along the stage route that are nearest to the telemetry route points. Specifically, the function returns the distance along the route of the point on the route nearest to a provided location. 
 
 This means that we can provide a set of points, such as a telemetry sample location points, and get the distance of a point along the route that is closest to the sample point location.
 
 One thing to note about the `rgeos` package is that it works with `Spatial` (`sp`) objects rather than *spatial features* (`sf`) objects, we so need to manage a conversion from one object type to the other in order to call the `:gProject()` function.
 
+*Unfortunately, the `rgeos` package is not currently available as a WebR WASM runnable package, so we need to find an equivalent function in another package, or write our own.*
+
+Fortunately, an alternative approach *is* available.
+
 If we also use UTM co-ordinates, the distance along the route is given in meters:
 
-?? MAYBE:
-
-route_sf <- st_as_sf(stage_route_utm)
-points_sf <- st_as_sf(min_pois_points_utm_sp)
-
-# Project points onto the line
-dist_points <- st_line_sample(route_sf, 
-                            density = 1) %>% # Creates points along the line
-  st_nearest_points(points_sf) %>% # Find nearest points between line points and input points
-  st_length()
-
-
-```{webr find_points_on_route}
-# NOT FOUND? TO DO
-library(rgeos)
+```{webr maybe_find_points_on_route}
+#MAYBE:
 
 min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
                       crs=st_crs(route_telem_utm))
@@ -320,15 +323,31 @@ min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
 min_pois_points_utm = st_cast(x = min_pois_utm, to = "POINT")
 min_pois_points_utm_sp = as(min_pois_points_utm, 'Spatial')
 
+route_sf <- st_as_sf(stage_route_utm)
+points_sf <- st_as_sf(min_pois_points_utm_sp)
+
+# Project points onto the line
+dist_points <- st_line_sample(route_sf, 
+                            density = 1) %>% # Creates points along the line
+  st_nearest_points(points_sf)
+
+# First get the nearest points on the line
+nearest_points_on_line <- st_cast(dist_points, "POINT")[c(FALSE, TRUE)]
+
+# Cast route to required type
+route_sf_sfc = st_as_sfc(route_sf)
+# Find distances
+point_dists <- st_line_project(route_sf_sfc, nearest_points_on_line)
+point_dists
+route_telem_utm$dist <- point_dists
+```
+```r
+# Example of rgeos usage
+library(rgeos)
+
 # Find the distance along the route of the point on the route
 # nearest to each telemetry sample
-# st_line_project in sf for a single point?
-# https://github.com/r-spatial/sf/issues/2291
-# or st_nearest_points ?
-dist_points = rgeos::gProject(as(stage_route_utm, "Spatial"),
-                min_pois_points_utm_sp, normalized = FALSE)
-
-zz = as.data.frame(dist_points)
+dist_points = rgeos::gProject(as(stage_route_utm, "Spatial"), min_pois_points_utm_sp, normalized = FALSE)
 
 # Add the distance into stage for each point
 route_telem_utm$dist =  dist_points
@@ -342,37 +361,22 @@ kable(head(route_telem_utm), format = "html") %>%
   kableExtra::scroll_box(width = "100%")
 ```
 
-We might thinks of each of these points as notional split points at particular distances along the route.
+We might think of each of these points as notional split points at particular distances along the route.
 
-it is also worth noting that the `rgeos::gInterpolate()` function complements `rgeos::gProject()` by providing a function that can also return a location a specified distance along a line:
+It is also worth noting that the `rgeos::gInterpolate()` function complements `rgeos::gProject()` by providing a function that can also return a location a specified distance along a line:
 
 
-TO DO
-# Assuming stage_route_utm is your route linestring
-# Convert to sf if not already
-route_sf <- st_as_sf(stage_route_utm)
-
-# Create point at specific distance along the line
-sample_point_sf_utm <- st_line_sample(route_sf, 
-                                     distance = 5000) %>% # Distance in meters
-                      st_cast("POINT") # Convert from MULTIPOINT to POINT if needed
+```{webr}
+## Get point at 5000m along the line
+# st_line_interpolate_point() expects the distance to be normalized (between 0 and 1)
+# For a point 5000m along the line, use: dist = 5000/st_length(route_sf)
+sample_point_sf_utm <- st_line_interpolate(route_sf_sfc, dist = 5000/st_length(route_sf))
 
 # Transform to latlong CRS
 sample_point_sf <- sample_point_sf_utm %>% 
                    st_transform(crs = st_crs(latlon_crs))
-
-BUT distance=5000 is wrong; instead use density, but set how?
-
-
-instead
-
-# Get point at 5000m along the line
-sample_point_sf_utm <- st_line_interpolate_point(route_sf, dist = 5000/st_length(route_sf))
-
-# Transform to latlong CRS
-sample_point_sf <- sample_point_sf_utm %>% 
-                   st_transform(crs = st_crs(latlon_crs))
-
+sample_point_sf
+```
 """CLAUDE:
 
 The key difference is that st_line_interpolate_point() expects the distance to be normalized (between 0 and 1), which is why we divide by the total length of the line. So:
@@ -383,7 +387,8 @@ If you want a point 75% along the line, use: dist = 0.75
 
 This is different from st_line_sample() which is better for getting multiple points along a line at regular intervals using the density parameter.
 """
-```{webr find_point_5km_in, warning=FALSE}
+
+```r
 sample_point_sp_utm = rgeos::gInterpolate(as(stage_route_utm, "Spatial"),
                                           5000, # Distance along route in meters
                                           normalized = FALSE)
@@ -521,7 +526,7 @@ vals = seq(to=max(route_telem_utm$dist), by=500)
 
 ggplot() + 
   # Predicted line in pink
-  geom_line(aes(x=vals, y=time_estimator(vals)), size=3, colour='pink') +
+  geom_line(aes(x=vals, y=time_estimator(vals)), linewidth=3, colour='pink') +
   # Sampled times in black
   geom_point(data=route_telem_utm, aes(x=dist, y=roundeddelta_s),
              color='black', size=1)
