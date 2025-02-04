@@ -29,9 +29,12 @@ jobs:
     #       jupyter lite build --contents content --output-dir dist
     #       touch ./dist/.nojekyll
   
+      - name: Quarto setup
+        uses: quarto-dev/quarto-actions/setup@v2
+
       - name: Build the Quarto Book site
         run: |
-          ARCH=$(uname -m) && if [ \"$ARCH\" = \"aarch64\" ] || [ \"$ARCH\" = \"arm64\" ]; then QUARTO_ARCH=\"arm64\"; else QUARTO_ARCH=\"amd64\"; fi && wget \"https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.40/quarto-1.6.40-linux-${QUARTO_ARCH}.tar.gz\" && tar -C ~/opt -xvzf \"quarto-1.6.40-linux-${QUARTO_ARCH}.tar.gz\" && quarto add r-wasm/quarto-live
+          quarto add r-wasm/quarto-live
           quarto render src/load-telemetry.Rmd --output-dir ../dist
 
 
