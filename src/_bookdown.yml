@@ -1,3 +1,2 @@
 output_dir: "../docs"
-rmd_files:  ["index.Rmd", "load-telemetry.Rmd", "sparse-telemetry-compare.Rmd",
-"load_full_telemetry.Rmd"]
+rmd_files:  ["index.Rmd", "load-telemetry.Rmd", "sparse-telemetry-compare.Rmd","load_full_telemetry.Rmd"]
