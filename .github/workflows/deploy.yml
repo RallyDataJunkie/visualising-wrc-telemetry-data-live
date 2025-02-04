@@ -32,9 +32,12 @@ jobs:
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Build the Quarto Book site
+      - name: Add Quarto extensions
         run: |
           quarto add r-wasm/quarto-live
+
+      - name: Render Quarto site
+        run: |
           quarto render src/load-telemetry.Rmd --output-dir ../dist
 
 
