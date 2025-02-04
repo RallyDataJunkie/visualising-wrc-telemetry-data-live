@@ -37,7 +37,7 @@ jobs:
         with:
           packages:
             any::knitr
-            
+            any::rmarkdown
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
