@@ -1,0 +1,89 @@
+---
+title: "webr elevatr"
+engine: knitr
+format: live-html
+resources:
+  - resources
+  - 2021_secto_Rally_Finland
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+# Elevation data test
+
+See if we can import elevation data using a modified form of `elevatr` package.
+
+```{webr}
+library(tidyr)
+library(sf)
+
+source("resources/elevatr_internal.R")
+source("resources/elevatr_patches.R")
+source("resources/elevatr_core_get_elev_raster.R")
+```
+
+```{webr}
+# Load in the stage data from a geojson file
+geojson_filename = '2021_secto_Rally_Finland/finland_2021.geojson'
+geojson_sf = sf::st_read(geojson_filename)
+geojson_sf = sf::st_transform(geojson_sf, 4326)
+```
+
+```{webr}
+ROUTE = 3
+geom_hull <- sf::st_convex_hull(geojson_sf[ROUTE,])
+elev_img <- get_elev_raster(locations = geom_hull, z = 12, clip = "bbox")
+```
+
+```{webr}
+raster::plot(elev_img)
+```
+
+```{webr}
+routepoints = subset(as.data.frame(st_coordinates(geojson_sf[ROUTE,])),
+                     select = c('X', 'Y'))
+routepoints$elevation = raster::extract(elev_img, routepoints)
+```
+
+```{webr}
+library(geosphere)
+stage_coords = st_coordinates(geojson_sf[ROUTE,])[,c('X','Y')]
+stage_step_distances = geosphere::distGeo(stage_coords)
+
+# The last step distance is NA, so drop it
+# Also prepend the distances with 0 for the first step
+routepoints$gs_dist = c(0, head(stage_step_distances,-1))
+routepoints$gs_cum_dist = cumsum(routepoints$gs_dist)
+```
+
+```{webr}
+library(ggplot2)
+
+ggplot(routepoints, aes(x=gs_cum_dist, y=elevation)) + geom_line()
+```
+
+```{webr}
+library(leaflet)
+
+leaflet() %>% addTiles() %>%
+  addRasterImage(elev_img, opacity = 0.8)
+```
+
+Slopes:
+
+https://github.com/itsleeds/pct/issues/75
+
+`slopes` package needs building, available from https://ropensci.github.io/slopes/
+
+Build action in https://github.com/ouseful-testing/webr-package-repo-demo/ shows how to build package
+
+
+---
+git clone https://github.com/ropensci/slopes.git
+cd slopes
+
+In R:
+remotes::install_deps(dependencies = TRUE)
+devtools::build()
+
+# makes eg slopes_1.0.1.tar.gz

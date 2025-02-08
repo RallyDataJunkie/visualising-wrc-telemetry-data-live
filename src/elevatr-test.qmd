@@ -1,0 +1,36 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+library(tidyr)
+library(elevatr)
+library(raster)
+
+library(tidyr)
+
+# Load in the stage data from a geojson file
+geojson_filename = '2021_secto_Rally_Finland/finland_2021.geojson'
+geojson_sf = sf::st_read(geojson_filename)
+geojson_sf = sf::st_transform(geojson_sf, 4326)
+```
+
+```{r}
+# Get bbox
+stage_bbox = sf::st_bbox(geojson_sf[1,])
+
+# Create points dataframe
+ex.df <- data.frame(x = c(stage_bbox[['xmin']], stage_bbox[['xmax']]), 
+                    y = c(stage_bbox[['ymin']], stage_bbox[['ymax']]))
+```
+
+```{r}# Create sf object from points
+buffered_geom <- sf::st_buffer(geojson_sf[1,], dist = 0)
+elev_img <- get_elev_raster(locations = buffered_geom, z = 12, clip = "bbox")
+elev_img
+```
+
+```{r}
+raster::plot(elev_img)
+```
