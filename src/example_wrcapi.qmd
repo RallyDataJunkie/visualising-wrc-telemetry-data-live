@@ -1,0 +1,46 @@
+---
+title: "webr elevatr"
+engine: knitr
+format: live-html
+resources:
+  - resources
+  - 2021_secto_Rally_Finland
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+```{webr}
+library(dplyr)
+library(tidyr)
+library(jsonlite)
+library(purrr)
+# Read JSON from URL
+json_data <- fromJSON("https://webappsdata.wrc.com/srv/wrc/json/api/wrcsrv/byType?t=%22Season%22&maxdepth=2")
+
+# Function to extract a specific meta value
+extract_meta_value <- function(meta_list, key) {
+  value <- meta_list$v[meta_list$n == key]
+  if (length(value) == 0) return(NA)
+  return(value)
+}
+
+# Process the data
+event_data <- json_data %>%
+  # Unnest the '_dchildren' column and add a suffix to avoid name conflicts
+  unnest(cols = `_dchildren`, names_sep = "_") %>%
+  # Extract the meta fields dynamically using the function
+  mutate(
+    year = name,
+    event_name = `_dchildren_name`,
+    event_start = map_chr(`_dchildren__meta`, extract_meta_value, key = "date-start"),
+    event_finish = map_chr(`_dchildren__meta`, extract_meta_value, key = "date-finish"),
+    event_surface = map_chr(`_dchildren__meta`, extract_meta_value, key = "info-surface"),
+    kmlmap = map_chr(`_dchildren__meta`, extract_meta_value, key = "kmlfile"),
+    time_zone = map_chr(`_dchildren__meta`, extract_meta_value, key = "time-zone"),
+    "category" = map_chr(`_dchildren__meta`, extract_meta_value, key = "category"),
+  ) %>%
+  select(year, event_name, event_start, event_finish, event_surface, kmlmap, time_zone, category)
+
+
+event_data
+```
