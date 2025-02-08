@@ -1,8 +1,20 @@
 ---
+title: WRC Full Telemetry Data (Quarto Live Document)
 format: live-html
+engine: knitr
+resources:
+  - resources
+  - images
+  - 2021_secto_Rally_Finland
 ---
 
-```{r setup_load_full_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+```{webr}
+#| autorun: true
+#| runbutton: false
+#| output: false
 library(knitr)
 library(tidyr)
 library(purrr)
@@ -10,11 +22,60 @@ library(dplyr)
 library(sf)
 library(trajr)
 library(lubridate)
-library(ggplot2)
 library(stringr)
+library(ggplot2)
+library(leaflet)
+library(ggnewscale)
+library(zoo)
+library(smoothr)
 
 knitr.duplicate.label = "allow"
 knitr::opts_chunk$set(fig.path = "images/")
+
+# Load in some local utility functions
+source("resources/telemetry_tools.R")
+```
+
+# Get Stage Route
+
+```{webr get_stage_route_data}
+# Path to the route telemetry data
+path = "./2021_secto_Rally_Finland"
+
+geojson_filename = paste0(path, "/finland_2021.geojson")
+```
+
+*For more information on analysing rally stage routes, see [__Visualising WRC Rally Stages With rayshader and R__](https://rallydatajunkie.com/visualising-rally-stages).*
+
+## Loading Official Stage Route Data
+
+Let's load in some route data:
+
+```{webr}
+geojson_sf = sf::st_read(geojson_filename)
+```
+
+
+Let's also clean the data a little by removing the reference to the Z dimension, making a note of original co-ordinate reference scheme, and generating references to the route in both latlong and UTM forms:
+
+```{webr process_stage_route_data}
+stage_route  = geojson_sf[7,]  %>% st_zm()
+
+# Grab a copy of the original projection
+original_crs = st_crs(stage_route)
+
+# Find the UTM zone for a sample a point on the route
+crs_zone = lonlat2UTMzone(c(st_coordinates(stage_route)[1,1],
+                            st_coordinates(stage_route)[1,2]))
+
+# Create the projection string
+utm_proj4_string = st_crs(crs_zone)$proj4string
+#"+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs"
+# units in meters e.g. https://epsg.io/32632
+
+# Transform the route projection
+stage_route_utm = st_transform(stage_route,
+                               crs = st_crs(utm_proj4_string))
 ```
 
 
@@ -28,9 +89,21 @@ Inspection of the telemetry files suggests that the data is presented in a commo
 
 Load in the full resolution telemetry:
 
-```{r}
-get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
-  # TO DO - the proj parameter is not used?
+```{webr}
+# Find the UTM zone for a sample a point on the route
+lonlat2UTMzone = function(lonlat) {
+  utm = (floor((lonlat[1] + 180) / 6) %% 60) + 1
+  if(lonlat[2] > 0) {
+    utm + 32600
+  } else{
+    utm + 32700
+  }
+}
+
+#utm_proj4_string="+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs"
+
+get_full_telem = function (fp, proj="", utm=FALSE){
+
   telem_df_full_raw = read.csv(fp)  %>% drop_na("lon", "lat") %>% 
                   map_df(rev) %>%
    # Omit the negative start time in row 2
@@ -70,7 +143,8 @@ get_full_telem = function (fp, proj=utm_proj4_string, utm=FALSE){
 ```
 
 We can then load the telemetry data in
-```{r}
+```{webr}
+path = "2021_secto_Rally_Finland"
 fn="df_telemetrymergeddata_SS7_Evans.csv"
 telem_df_full = get_full_telem(file.path(path, fn))
 ```
@@ -78,13 +152,13 @@ telem_df_full = get_full_telem(file.path(path, fn))
 
 How many data points?
 
-```{r}
+```{webr how_many}
 nrow(telem_df_full %>% st_coordinates() ) 
 ```
 
 As we can see, the  full telemetry gives us quite closely sampled points along the route:
 
-```{r}
+```{webr}
 leaflet(telem_df_full) %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addCircleMarkers(weight = 1)
@@ -93,7 +167,7 @@ leaflet(telem_df_full) %>%
 
 Or how about plotting the data using ggplot:
 
-```{r}
+```{webr}
 ggplot(data=telem_df_full) + geom_sf(aes(color=speed), size=0.1)
 ```
 
@@ -103,9 +177,8 @@ With a large number of points available, we can cast the dataset directly to a `
 
 *The `trajr` R package was originally developed for use analysing animal tracks, but it's also really handy for analysing rally routes...*
 
-```{r}
+```{webr}
 telemetry_full_trajectory = function(telem_df_full){
-  
   utm_telem_full = st_transform(telem_df_full,
                                 crs=utm_proj4_string) %>% 
                       mutate(lat = st_coordinates(.)[,1],
@@ -151,7 +224,7 @@ If we plot these values against the distance into stage, generated from the loca
 
 The `trajr` route actually calculates a distance into the route assuming an origin based on the first point in the route.
 
-```{r}
+```{webr}
 evans_fn="df_telemetrymergeddata_SS7_Evans.csv"
 trj_evans = telemetry_full_trajectory(get_full_telem(file.path(path, evans_fn)))
 
@@ -170,25 +243,34 @@ However, if the official route does not match the actual route, we may get a "fa
 
 Another approach might be to generate out own unofficial official route by creating a small buffer around the intersection of the captured route telemetry and then looking up roads using OSM within that buffered area; such a road should be unique (assuming that the stage route follows tracks that appear on OpenStreetMap) and could then be used as the official route.
 
-```{r}
+```{webr}
 dist_into_route = function(trj_utm, stage_route_utm) {
-   # telem_df_full_utm =  st_transform(telem_df_full,
-  #                         crs = st_crs(utm_proj4_string))
-  full_pois_utm = st_sfc(st_multipoint(st_coordinates(trj_utm)),
-                      crs=st_crs(trj_utm))
-  full_pois_points_utm = st_cast(x = full_pois_utm, to = "POINT")
-  full_pois_points_utm_sp = as(full_pois_points_utm, 'Spatial')
+  # Ensure consistent CRS
+  trj_utm <- st_transform(trj_utm, crs = st_crs(stage_route_utm))
   
-  # Find the distance along the route of the point on the route
-  # nearest to each telemetry sample
-  rgeos::gProject(as(stage_route_utm,"Spatial"),
-                  full_pois_points_utm_sp,  normalized = FALSE)
+  # Create spatial points from trajectory
+  full_pois_points_utm = st_geometry(trj_utm)
+  
+  # Convert route to sf object if not already
+  route_sf <- st_as_sf(stage_route_utm)
+  
+  # Project points onto the line and find distances
+  dist_points <- st_line_sample(route_sf, density = 1) %>% 
+    st_nearest_points(full_pois_points_utm)
+  
+  # Get nearest points on the line
+  nearest_points_on_line <- st_cast(dist_points, "POINT")[c(FALSE, TRUE)]
+  
+  # Find distances along the route
+  point_dists <- st_line_project(st_as_sfc(route_sf), nearest_points_on_line)
+  
+  return(point_dists)
 }
 ```
 
 We can now get the distance into route for each telemetry point:
 
-```{r warning=FALSE}
+```{webr warning=FALSE}
 # This throws a warning?
 trj_evans$dist_into_route = dist_into_route(trj_evans, stage_route_utm)
 trj_ogier$dist_into_route = dist_into_route(trj_ogier, stage_route_utm)
@@ -200,7 +282,7 @@ Another approach would be simple to project one driver's route onto the route ta
 
 Where do we brake?
 
-```{r}
+```{webr}
 #library(ggspatial)
 #  annotation_spatial(trj_ogier ) +
 #  layer_spatial(trj_ogier, aes(alpha = brk), color='red',size=0.3) 
@@ -228,7 +310,7 @@ scale_color_gradient(low = "white", high = "red")+ stat_sf_coordinates( aes( col
 
 How do our two drivers compare in their use of the throttle?
 
-```{r}
+```{webr compare_drivers_plot}
 ggplot() +
   geom_line(data=(trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000)),
             aes(x=cum_dist,y=throttle), color='red') +
@@ -238,7 +320,7 @@ ggplot() +
 
 With smoothing:
 
-```{r}
+```{webr}
 library(zoo)
 
 ggplot() +
@@ -255,7 +337,7 @@ ggplot() +
 We can also explore adding throttle and brake data to the speed trace.
 
 
-```{r}
+```{webr}
 theme_black = function(base_size = 12, base_family = "") {
   
   theme_grey(base_size = base_size, base_family = base_family) %+replace%
@@ -265,7 +347,7 @@ theme_black = function(base_size = 12, base_family = "") {
       axis.line = element_blank(),  
       axis.text.x = element_text(size = base_size*0.8, color = "white", lineheight = 0.9),  
       axis.text.y = element_text(size = base_size*0.8, color = "white", lineheight = 0.9),  
-      axis.ticks = element_line(color = "white", size  =  0.2),  
+      axis.ticks = element_line(color = "white", linewidth  =  0.2),  
       axis.title.x = element_text(size = base_size, color = "white", margin = margin(0, 10, 0, 0)),  
       axis.title.y = element_text(size = base_size, color = "white", angle = 90, margin = margin(0, 10, 0, 0)),  
       axis.ticks.length = unit(0.3, "lines"),   
@@ -287,7 +369,7 @@ theme_black = function(base_size = 12, base_family = "") {
       panel.border = element_rect(fill = NA, color = "white"),  
       panel.grid.major = element_line(color = "grey35"),  
       panel.grid.minor = element_line(color = "grey20"),  
-      panel.margin = unit(0.5, "lines"),   
+      panel.spacing = unit(0.5, "lines"),   
       # Specify faceting options
       strip.background = element_rect(fill = "grey30", color = "grey10"),  
       strip.text.x = element_text(size = base_size*0.8, color = "white"),  
@@ -304,27 +386,27 @@ theme_black = function(base_size = 12, base_family = "") {
 
 What happens if we try to colour the speed line according to the throttle and brake percentages?
 
-```{r}
+```{webr}
 ggplot() +
   #geom_line(data=trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000),
-  #          aes(x=cum_dist,y=speed), color='white', size=4) +
+  #          aes(x=cum_dist,y=speed), color='white', linewidth=4) +
    geom_line(data=trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000),
-            aes(x=cum_dist,y=speed, alpha=throttle), size=1, color="green") +
+            aes(x=cum_dist,y=speed, alpha=throttle), linewidth=1, color="green") +
   geom_line(data=trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000),
-            aes(x=cum_dist,y=speed-3, alpha=brk), color="red", size=1) +
+            aes(x=cum_dist,y=speed-3, alpha=brk), color="red", linewidth=1) +
    geom_line(data=trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000),
-            aes(x=cum_dist,y=throttle-50, alpha=100-brk), size=1, color="green") +
+            aes(x=cum_dist,y=throttle-50, alpha=100-brk), linewidth=1, color="green") +
   geom_line(data=trj_ogier %>% filter(cum_dist>=1000 & cum_dist<=2000),
-            aes(x=cum_dist,y=brk-50, alpha=100-throttle), color="red", size=1)+
+            aes(x=cum_dist,y=brk-50, alpha=100-throttle), color="red", linewidth=1)+
   
   theme_black()+ theme(legend.position="none")
 ```
 
-```{r}
+```{webr}
 ggplot(data=telem_df_full) + geom_sf(aes(color=throttle), size=0.1)
 ```
 
-```{r}
+```{webr}
 ggplot(data=telem_df_full) + geom_sf(aes(color=-brk), size=0.1)
 ```
 
@@ -337,12 +419,11 @@ How do our drivers compare based on the time it takes them to driver a particula
 
 Sample common points to find the difference:
 
-```{r}
+```{webr}
 segment_length=100
 
 # stage_length set in earlier section
 segments = seq(from=0, to=stage_length, by = segment_length)
-
 
 ogier_full_estimator = approxfun(trj_ogier$cum_dist,
                             trj_ogier$displacementTime)
@@ -362,7 +443,7 @@ ggplot()+geom_line(aes(x=segments, y=ogier_evans_point_delta))
 
 Compare time into stage for a given distance into stage. Note that this is the distance into the stage as calculated from the trajectory, rather than by comparison of distances into the same (idealised) route.
 
-```{r}
+```{webr}
 ggplot() +
   geom_line(data=(trj_ogier %>% mutate(dt=as.double(displacementTime)) %>% filter(dt >=0)),
             aes(x=cum_dist,y=dt), color='blue') +
@@ -374,7 +455,7 @@ ggplot() +
 
 We can use a cross-correlation function to try to identify the extent to which traces are similar across drivers. The `approxfun()` estimator does a very simple interpoloation between consecutive values in the original dataset, which means that actual telemetry data values are pinned in the prediction model and used for local estimation. 
 
-```{r}
+```{webr}
 ts_estimator = function(df, x, y, points){
   estimator_ = approxfun(df[[x]], df[[y]])
   estimator_(points)
@@ -383,7 +464,7 @@ ts_estimator = function(df, x, y, points){
 
 We can use this function to estimate different properties from the time series telemetry data. 
 
-```{r}
+```{webr}
 ogier_speed_est = ts_estimator(trj_ogier, "cum_dist", "speed", segments)
 evans_speed_est = ts_estimator(trj_evans, "cum_dist", "speed", segments)
 
@@ -393,7 +474,7 @@ speed_correlation_ogier_evans
 
 We can report on the correlation at different lags by using the lag value as an index value:
 
-```{r}
+```{webr}
 lag = 0
 
 speed_correlation_ogier_evans[lag]
@@ -401,7 +482,7 @@ speed_correlation_ogier_evans[lag]
 
 Brake cross-correlation:
 
-```{r}
+```{webr}
 ogier_brk_est = ts_estimator(trj_ogier, "cum_dist", "brk", segments)
 evans_brk_est = ts_estimator(trj_evans, "cum_dist", "brk", segments)
 
@@ -414,14 +495,14 @@ ccf(ogier_brk_est, evans_brk_est)
 
 If we have a route made up from a set of points, we find an smooth trajectory through them using a function such as a the `smoothr::smooth()` function. The `trajr` package also has a smoothing function in the form of `TrajSmoothSG()`.
 
-```{r}
+```{webr}
 smooth_route_utm = smoothr::smooth(stage_route_utm,
                                    method = "ksmooth")
 ```
 
 We can preview the route to on an interactive map so we can zoom in to see where the smooth route might diverge from the provided route.
 
-```{r}
+```{webr}
 smooth_route = st_transform(smooth_route_utm,
                             crs = st_crs(original_crs)) %>% st_coordinates()
 smooth_route = smooth_route[,1:2]
@@ -447,7 +528,7 @@ We can use the telemetry from a route to validate (or not!) our speed model. So 
 
 We already have a stage route available, so let's recap how to generate the speed model from a stage route. To ty to improve the model, we can use the smmoothed route. For many parts of the stage, the smoothed route is likely to give a better estimate of the line. However, for certain stage features, such as hairpins, the smoothing may be over-optimistic and take an impossible line.
 
-```{r warning=FALSE, message=FALSE, results='hide'}
+```{webr route_convexity}
 #stepdist = 10
 #window = 20
 
@@ -465,7 +546,7 @@ sample_points = route_convexity$cum_dist
 
 To validate the model, we need to ensure that we are testing the telemetry within the buffered route area and also ensure we are using similar sample distances.
 
-```{r warning=FALSE, message=FALSE}
+```{webr warning=FALSE, message=FALSE}
 buffer_width = 50
 buffered_route = get_buffered_route(stage_route_utm, buffer_width,
                                     crs=original_crs, utm=FALSE)
@@ -487,7 +568,7 @@ test_speeds = ts_estimator(trj_buffered_test,
 
 We can plot the actual speed (as captured  telemetry) along with the interpolated speed at regular points along the stage to check the behaviour of the interpolator.
 
-```{r message=FALSE, warning=FALSE}
+```{webr message=FALSE, warning=FALSE}
 # Just quickly check that the sample speed model approximates the raw data
 ggplot() + 
   geom_line(data=trj_buffered_test,
@@ -500,7 +581,7 @@ Comparing the traces, the simple estimator appears to do a reasonable job of int
 
 How well does the time into stage interpolation work (which is to say: can we reliably interpolate the time into stage from a telemetry based model)?
 
-```{r message=FALSE, warning=FALSE}
+```{webr message=FALSE, warning=FALSE}
 test_times = ts_estimator(trj_buffered_test,
                           "cum_dist", "displacementTime", sample_points)
 
@@ -515,7 +596,7 @@ Again, that looks reasonable.
 
 Now let's see how our simple speed model works. To begin with, how well do the speeds predicted by the speed model, based on stage route analysis, compared with speeds captured from telemetry?
 
-```{r warning=FALSE}
+```{webr warning=FALSE}
 # Just quickly check that the sample speed model approximates the raw data
 ggplot() + 
   geom_line(data=route_convexity,
@@ -528,7 +609,7 @@ ggplot() +
 
 We can also find a simple cross correlation between the speed model and some speed telemetry data:
 
-```{r}
+```{webr}
 speed_correlation = ccf(route_convexity$acc_sp, test_speeds, na.action=na.pass)
 
 speed_correlation
@@ -538,7 +619,7 @@ The model is a bit rough, bit captures some of the major features, and gives us 
 
 Perhaps more important from the perspective of using the speed model as a basis for predictions of time into stage, let's see how the time into stage prediction compares with the actual time into stage at particular locations as captured from telemetry:
 
-```{r warning=FALSE, message=FALSE}
+```{webr warning=FALSE, message=FALSE}
 ggplot() + 
   geom_line(data=route_convexity,
                      aes(x=cum_dist, y=acc_time)) +
@@ -554,7 +635,7 @@ We can modify the model to account for the linear dirft by tweaking the cornerin
 
 We can detrend the prediction error to get a feel how the "shape" of the predicted time drifts from the actual time. One way of detrending the data is to create a linear model of it and then inspect the residual error around that model.
 
-```{r warning=FALSE, message=FALSE}
+```{webr warning=FALSE, message=FALSE}
 linear_time_model = lm((test_times - route_convexity$acc_time) ~ c(1:length(test_times)))
 
 plot(resid(linear_time_model), type="l") 
@@ -564,7 +645,7 @@ By inspection of the elevation map for this stage, we may be lossing time in the
 
 Another approach is to normalise the curves and then compare them:
 
-```{r warning=FALSE, message=FALSE}
+```{webr warning=FALSE, message=FALSE}
 test_times_normalised = test_times / max(test_times, na.rm=T)
 acc_time_normalised = route_convexity$acc_time / max(route_convexity$acc_time,
                                                      na.rm=T)
@@ -580,7 +661,7 @@ We can also compare the error between the actual times into stage and the predic
 
 If the error of the predicted time into stage is less than that of the linear model, then it adds some value to time predictions based on sparse telemetry.
 
-```{r warning=FALSE, message=FALSE}
+```{webr warning=FALSE, message=FALSE}
 ggplot() + 
   geom_line(aes(x=sample_points, y=test_times_normalised - acc_time_normalised),
             color='blue') + 
@@ -592,7 +673,7 @@ ggplot() +
 
 # Numbering Corners
 
-```{r}
+```{webr}
 cornerer = function (df, slight_conv=0.02, closeby=25){
   df %>%
     mutate(straightish =  (abs(ConvexityIndex) < slight_conv)) %>%
@@ -624,12 +705,12 @@ yy = xx %>% group_by(streak_id) %>%
 xx
 ```
 
-```{r}
+```{webr}
 xx %>% filter(kmsection==2) %>% select(straightish, dirChange, turn, invisible_ci)
 ```
 
 
-```{r}
+```{webr}
 yy = yy %>% mutate(txt = ifelse(invisible_ci>9 & turn=="S",paste(streak*10),
                            ifelse(invisible_ci>9, paste("slight",turn, streak*10),
                                   paste(paste0(streak, invisible_ci), turn)))) %>%
@@ -641,7 +722,7 @@ zz
 #yy
 ```
 
-```{r}
+```{webr}
 tmp_data = yy %>% filter(kmsection==2)
 tmp_data2 = xx %>% filter(kmsection==2)
 ggplot(tmp_data2) + geom_text(data=head(tmp_data2, 1),aes(x=Midpoint_X, y=Midpoint_Y),label="X" , color="green") +
@@ -651,12 +732,12 @@ ggplot(tmp_data2) + geom_text(data=head(tmp_data2, 1),aes(x=Midpoint_X, y=Midpoi
 ```
 
 
-```{r}
+```{webr}
 zz[[2,'txt']]
 ```
 
 
-```{r}
+```{webr}
 
 ggplot(tmp_data, aes(x=x, y=y))+
   geom_text(data=head(tmp_data,1), label="X") +
@@ -678,7 +759,7 @@ ggplot(data=trj[zoom1,],
                  color= (firstish) ), size=1) +
   theme_classic()+
   theme(axis.text.x = element_text(angle = 45))
-```{r}
+```{webr}
 ggplot() +
   #geom_point(data=xx,
   #           aes(x=Midpoint_X, y=Midpoint_Y,

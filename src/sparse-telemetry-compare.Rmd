@@ -1,4 +1,22 @@
-```{r setup_sparse_telem, warning=FALSE, include=FALSE, echo=FALSE, message=FALSE, output=FALSE}
+---
+title: Sparse WRC Telemetry Data (Quarto Live Document)
+engine: knitr
+format: live-html
+code-annotations: select
+resources:
+  - resources
+  - 2021_secto_Rally_Finland
+  - images
+---
+
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+
+```{webr setup_sparse_telem}
+#| autorun: true
+#| runbutton: false
+#| output: false
 library(knitr)
 library(tidyr)
 library(purrr)
@@ -9,9 +27,14 @@ library(ggplot2)
 library(leaflet)
 library(kableExtra)
 
-library(units)
 
-source('telemetry_tools.R')
+library(leaflet)
+library(units)
+library(trajr)
+library(rLFT)
+
+# Load in some local utility functions
+source("resources/telemetry_tools.R")
 
 knitr.duplicate.label = "allow"
 knitr::opts_chunk$set(fig.path = "images/")
@@ -19,7 +42,7 @@ knitr::opts_chunk$set(fig.path = "images/")
 
 # Comparing Drivers' Live (Sparse) Telemetry
 
-In this chapter, we will start to explore the extent we can compare the live telemetry data traces of different drivers. Note that te data may be quite sparse at times, which might limit what we are able to do.
+In this chapter, we will start to explore the extent we can compare the live telemetry data traces of different drivers. Note that the data may be quite sparse at times, which will limit what we are able to do.
 
 Where large gaps exist between data samples, we are more likely to require a sensible time model more the stage to try to minimise errors in using a simple, linear interpolator to generate missing data.
 
@@ -27,22 +50,24 @@ Where large gaps exist between data samples, we are more likely to require a sen
 
 Get the route in a UTM form:
 
-```{r}
-geojson_filename = "data/finland_2021.geojson"
+```{webr}
+geojson_filename = "2021_secto_Rally_Finland/finland_2021.geojson"
 geojson_sf = sf::st_read(geojson_filename)
 
+stage_route  = geojson_sf[7,]  %>% st_zm()
+utm_proj4_string = get_utm_proj_string(stage_route)
+
 latlon_crs = 4326
+original_crs = st_crs(stage_route)
 
 # Use a convenience function that loads in the geojson file
 # and then generates a spatial features dataframe with a UTM projection
 stage_route_utm = get_route(geojson_sf, 7)
-
-stage_route_utm
 ```
 
 We can obtain the stage length in meters from the route:
 
-```{r}
+```{webr}
 # Get the stage length.. this includes the units
 stage_length_m = st_length(stage_route_utm)
 
@@ -55,7 +80,7 @@ stage_length
 
 We can also take this opportunity to create a buffered route for filtering the telemetry data:
 
-```{r}
+```{webr}
 #Use a convenience function to get buffered route
 buffer_width = 50
 buffered_route = get_buffered_route(stage_route_utm, buffer_width,
@@ -66,18 +91,20 @@ leaflet(buffered_route) %>%
   addPolylines(color = "red", weight = 2)
 ```
 
+Among other things, the buffered route gives us a region around the route that allows for intersecting points within a "run-off" area.
+
 ## Load Driver Data
 
 Load in data for a handful of drivers:
 
-```{r}
+```{webr}
 # Path to the telem data
 path = "./2021_secto_Rally_Finland"
 ```
 
 TO DO  - set the origin as the dummy origin
 
-```{r}
+```{webr}
 evans_min_telem = get_min_telem("Evans", "SS7", path)
 evans_min_telem_utm = evans_min_telem %>%
                         st_transform(crs = st_crs(utm_proj4_string))
@@ -89,22 +116,21 @@ route_telem_evans = get_route_telem(stage_route_utm,
 evans_min_telem_utm
 ```
 
-We can always preview the data just to check that it is sensible:
+We can always preview the data just to check that it is sensible, although we note that this data may include off-stage data from liaison sections.
 
-```{r}
-library(leaflet)
-
+```{webr}
 tmp_route <- evans_min_telem %>% st_coordinates() 
 
 leaflet(tmp_route) %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
-  addPolylines(color = "purple", weight = 5)
+  addPolylines(color = "purple", weight = 5) %>%
+  addPolylines(data=buffered_route,color = "black", weight = 2)
 
 ```
 
 Let's get some data for some other drivers:
 
-```{r}
+```{webr}
 fourmaux_min_telem = get_min_telem("Fourmaux", "SS7", path)
 
 fourmaux_min_telem_utm = fourmaux_min_telem %>%
@@ -117,7 +143,7 @@ route_telem_fourmaux = get_route_telem(stage_route_utm,
 fourmaux_min_telem_utm
 ```
 
-```{r}
+```{webr}
 breen_min_telem = get_min_telem("Breen", "SS7", path)
 
 breen_min_telem_utm = breen_min_telem %>%
@@ -132,7 +158,7 @@ route_telem_breen
 
 And preview the telemetry sample points for all the drivers we have gathered telemetry data for:
 
-```{r}
+```{webr}
 leaflet( )  %>% 
   addProviderTiles("OpenTopoMap", group = "OSM") %>% 
   addCircleMarkers(data=route_telem_evans, radius=1, color="blue") %>%
@@ -142,26 +168,47 @@ leaflet( )  %>%
 
 ## Get Annotated Route Telemetry
 
-The route telemetry annotation includes the distance along the stage route for each telemetry sample:
+The route telemetry annotation includes timestamps along the route for each telemetry sample:
 
-```{r}
-route_telem_evans_utm = to_utm(route_telem_evans)
-route_telem_evans_utm = route_telem_evans_utm %>% 
-                          get_telem_dists(stage_route_utm)
-#route_telem_evans_utm
+```{webr}
+route_telem_evans_utm = get_telem_times(route_telem_evans)
 
-
-route_telem_fourmaux_utm = to_utm(route_telem_fourmaux)
-route_telem_fourmaux_utm = route_telem_fourmaux_utm %>% 
-                              get_telem_dists(stage_route_utm)
+route_telem_fourmaux_utm = get_telem_times(route_telem_fourmaux)
 route_telem_fourmaux_utm
+```
+
+We also need to limit the telemetry samples to samples collected along the stage route. We can do this by intersecting each driver's telemetry data with the buffered route, although we could also do time of day based filtering if we knew the time at which the car was in the stage. 
+
+```{webr}
+buffered_route_utm = get_buffered_route(stage_route_utm, buffer_width, utm=TRUE)
+
+# Transform to get same crs
+route_telem_evans_utm <- st_transform(route_telem_evans_utm, st_crs(stage_route_utm))
+route_telem_fourmaux_utm <- st_transform(route_telem_fourmaux_utm, st_crs(stage_route_utm))
+
+#Find the intersecting points
+route_telem_evans_intersect_utm = st_intersects(buffered_route_utm, route_telem_evans_utm)
+route_telem_fourmaux_intersect_utm = st_intersects(buffered_route_utm, route_telem_fourmaux_utm )
+
+# And then filter on those points
+# Also nullify the Z dimension
+stage_telem_evans_utm = route_telem_evans_utm[route_telem_evans_intersect_utm[[1]],] %>% st_zm()
+stage_telem_fourmaux_utm = route_telem_evans_utm[route_telem_fourmaux_intersect_utm[[1]],] %>% st_zm() 
+
+stage_telem_evans = stage_telem_evans_utm %>% st_transform(crs = latlon_crs)
+stage_telem_fourmaux = stage_telem_fourmaux_utm %>% st_transform(crs = latlon_crs) 
+
+leaflet( )  %>% 
+  addProviderTiles("OpenTopoMap", group = "OSM") %>% 
+  addCircleMarkers(data=stage_telem_evans, radius=1, color="blue") %>%  
+  addCircleMarkers(data=stage_telem_fourmaux, radius=1, color="green") %>%   addPolylines(data=buffered_route,color = "black", weight = 2)
 ```
 
 ## Create Driver Estimators
 
 From the annotated data can generate some naive estimators for stage time along route based on distance along route:
 
-```{r test_drivers_estimators}
+```{webr test_drivers_estimators}
 
 fourmaux_time_estimator = approxfun(c(0, route_telem_fourmaux_utm$dist),
                            c(0, route_telem_fourmaux_utm$roundeddelta_s))
@@ -180,7 +227,7 @@ TO DO
 
 Let's see if a visual comparison reveals anything:
 
-```{r test_compare_driver_telem_linechart, warning=FALSE, mesage=FALSE}
+```{webr test_compare_driver_telem_linechart, warning=FALSE, mesage=FALSE}
 # Sample every 500m
 vals = seq(to=max(c(route_telem_fourmaux_utm$dist,
                     route_telem_evans_utm$dist)), by=500)
@@ -205,7 +252,7 @@ In order to compare the time it takes two or more drivers to cover the same stre
 The following function will chunk the route into fixed length segments (exempt the final segment) and find out how long it takes the driver to complete that section.
 
 
-```{r}
+```{webr}
 # Return time to travel along a segment. 
 # Units relate to whether the distances are in eg m or km
 segmentTimeDelta = function(driver_estimator, cumdist,
@@ -217,7 +264,7 @@ segmentTimeDelta = function(driver_estimator, cumdist,
 
 We can now generate a simple estimate of the time taken to complete each segment:
 
-```{r}
+```{webr}
 #18163.4 %/% 1000 -> 18
 # Get sections 1000m long
 segment_length = 1000
@@ -235,7 +282,7 @@ evans_1km_segments
 
 Let's also grab similar estimates for another driver:
     
-```{r}
+```{webr}
 fourmaux_1km_segments = segmentTimeDelta(fourmaux_time_estimator,
                                          segments, segment_length)
 fourmaux_1km_segments
@@ -247,16 +294,14 @@ We can now generate a list of delta values describing the time difference betwee
 
 __Note that if the telemetry samples are widely separated, this estimates might be quite poor, particularly if they are based on linear interpolation of times between points.__
 
-```{r}
+```{webr}
 dummy_split_deltas = evans_1km_segments - fourmaux_1km_segments
 head(dummy_split_deltas, 3)
 ```
 
 If we cast the original route to a `trajr` directory, we can easily split the route into separate sections based on the cumulative distance of steps along the route.
 
-```{r}
-library(trajr)
-
+```{webr}
 trj <- TrajFromCoords(as.data.frame(st_coordinates(stage_route_utm)))
 trj$distance = Mod(trj$displacement)
 
@@ -266,7 +311,7 @@ trj$cum_dist = cumsum(trj$distance)
 
 We can then plot the route with the time delta highlighted:
 
-```{r}
+```{webr}
 g = ggplot()+ coord_fixed()
 
 # Create a trace for each segment
@@ -294,7 +339,7 @@ g+scale_colour_gradient( low = "red", high = "green", breaks=c(0))
 
 TO DO  - can we split on the route using split points a distance along the route?
 
-```{r}
+```{webr}
 # not required?
 getlocation = function(route_utm, dist, units='m') {
    sample_point_sp_utm = rgeos::gInterpolate(as(route_utm, "Spatial"),
@@ -312,7 +357,7 @@ getlocation = function(route_utm, dist, units='m') {
 getlocation(stage_route_utm, c(1500, 2000))
 ```
 
-```{r warning=FALSE}
+```{webr warning=FALSE}
 
 # Not required?
 df_dummy_split_points = getlocation(stage_route_utm, segments)
@@ -328,7 +373,7 @@ head(df_dummy_split_coords, 3)
 
 
 We can also split the co-ordinates out from the geometry using a recipe such as:
-```{r}
+```{webr}
 #https://stackoverflow.com/questions/54734771/sf-write-lat-long-from-geometry-into-separate-column-and-keep-id-column
 #df %>%
 #    mutate(lat = unlist(map(geometry,1)),
@@ -371,9 +416,7 @@ We can use this approach to create a simple speed model based on curvature of th
 
 The `rLFT` processing linear features *R* package provides a handy tool for modeling curvature along each point of a route in the form of a *boundary convexity tool* (`bct()`). The curvature of a moving segment along the route is determined, along with the center of curvature and a convexity measure.
 
-```{r message=FALSE, warning=FALSE}
-library(rLFT)
-
+```{webr message=FALSE, warning=FALSE}
 # The step dist is how far we move the window at each step
 stepdist = 10
 # The window is the length of the route for which we find the curvature
@@ -394,8 +437,7 @@ head(route_convexity, 3)
 
 Although the boundary convexity tool gives us a convexity measure, we can also create our own curvature metric that corresponds more closely to Nafría's model. I don't know how to write vectorised functions properly, so I'll create a simple function that generates the curvature at a particular point on a route, and then use the `Vectorize()` helper function to as-if vectorise it for me.
 
-```{r message=FALSE, warning=FALSE}
-library(devtools)
+```{webr}
 # The curvature function takes an arc defined over
 # x and y coordinate lists
 
@@ -455,7 +497,7 @@ curvatures = function(route_convexity){
 
 This model uses the corner centre measures calculated by the boundary convexity tool to return a radius for the curvature of each segment:
 
-```{r}
+```{webr}
 route_convexity$radius = curvatures(route_convexity)
 ```
 
@@ -464,7 +506,7 @@ We can now generate the cornering speed model. The corner speed model generates 
 - a corner index, `invisble_ci`, which is an integer representing the corner radius;
 - a notional segment/corner target speed, `invisible_sp`.
 
-```{r}
+```{webr}
 corner_speed_model = function(route_convexity,
                                invisible_speeds = c(20, 40, 50, 60, 70, 85,
                                                     100, 115, 120, 130, 170),
@@ -502,7 +544,7 @@ corner_speed_model = function(route_convexity,
 
 Applying the speed model to our route gives us a corner index and notional target speed for each segment:
 
-```{r}
+```{webr}
 route_convexity = route_convexity %>% corner_speed_model()
 
 head(route_convexity, 3)
@@ -510,7 +552,7 @@ head(route_convexity, 3)
 
 We can build up the speed model for the route. At each step we accelerate towards the nominal sector target speed (the `invisible_sp` value). We can't accelerate infinitely fast, so our actual target accumulated speed for the segment, `acc_sp`, is a simple function of the current speed and the notional target speed. We can then calculate the notional time to complete that segment, `invisible_time`.
 
-```{r}
+```{webr}
 acceleration_model = function(route_convexity, stepdist=10,
                                acc = 0.1, dec = 0.1) {
   # Acceleration model
@@ -554,7 +596,7 @@ acceleration_model = function(route_convexity, stepdist=10,
 
 If we now apply the acceleration model to the route, we can calculate the speed over each segment, and the time taken to complete the segment:
 
-```{r}
+```{webr}
 route_convexity = acceleration_model(route_convexity)
 
 head(route_convexity, 3)
@@ -562,7 +604,7 @@ head(route_convexity, 3)
 
 Summing over the segment times (omitting the flying finish which has no specified ongoing segment length) gives us an estimated stage time
 
-```{r}
+```{webr}
 anticipated_time = function(route_convexity) {
   anticipated_time = sum(route_convexity$invisible_time[1:nrow(route_convexity)-1])
   cat(paste0("Anticipated stage time: ", anticipated_time %/% 60,
@@ -574,13 +616,13 @@ anticipated_time(route_convexity)
 
 We can also view the speed model over distance into stage:
 
-```{r message=FALSE, warning=FALSE}
+```{webr message=FALSE, warning=FALSE}
 ggplot(route_convexity) + geom_line(aes(x=cum_dist, y=acc_sp))
 ```
 
 We can also plot the time model into the stage as the accumulated time:
 
-```{r warning=FALSE, message=FALSE,}
+```{webr warning=FALSE, message=FALSE,}
 ggplot(route_convexity) + geom_line(aes(x=cum_dist, y=acc_time))
 ```
 

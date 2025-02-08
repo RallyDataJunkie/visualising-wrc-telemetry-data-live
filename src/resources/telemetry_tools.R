@@ -78,6 +78,7 @@ get_min_telem = function(driver_name, stagenum, path, utm=FALSE) {
               gear, rpm, throttle, track)) %>%
     select(-c(X_rally_stageid, X_carentryid, X_telemetryID))
   
+  # TO DO - need to fix the time zone handling
   telem_df_min %>% drop_na(lon, lat) %>%
     st_as_sf(coords = c("lon","lat")) %>%
     st_set_crs(latlon_crs) %>%
@@ -96,7 +97,7 @@ get_buffered_route = function(stage_route_utm, buffer_width=50,
   
   buffered_route = st_buffer(stage_route_utm, buffer_margin_100m)
   if (!is.null(crs)) {
-    buffered_route =  st_transform(buffered_route_utm, crs)
+    buffered_route =  st_transform(buffered_route, crs)
   }
   
   buffered_route
@@ -120,6 +121,9 @@ get_route_telem = function(stage_route_utm, min_telem_utm,
   # Could add some logic to transform CRS if they mismatch?
   route_telem_intersect = st_intersects(buffered_route_utm, min_telem_utm)
   
+  # Calculate distances along the original unbuffered route
+  min_telem_utm$dist = st_line_project(st_as_sfc(stage_route_utm), st_geometry(min_telem_utm))
+  
   # And then filter on those points
   # Also nullify the Z dimension
   min_telem_utm = min_telem_utm[route_telem_intersect[[1]],] %>% st_zm()
@@ -130,10 +134,21 @@ get_route_telem = function(stage_route_utm, min_telem_utm,
     min_telem_utm
 }
 
-
+get_telem_times = function(route_telem_utm) {
+  
+  # Calculate time-related attributes
+  first_time = route_telem_utm[1,]$utc
+  first_time_rounded = round_date(first_time, unit="1 minutes")
+  
+  route_telem_utm$roundeddelta_t = route_telem_utm$utc - first_time_rounded
+  route_telem_utm$roundeddelta_s = as.double(route_telem_utm$roundeddelta_t)
+  
+  return(route_telem_utm)
+}
 
 # Add distance along route measure to route
-get_telem_dists = function(route_telem_utm, stage_route_utm) {
+# Uses rgeos; this is handled by get_route_telem
+get_telem_dists_old = function(route_telem_utm, stage_route_utm) {
   
   min_pois_utm = st_sfc(st_multipoint(st_coordinates(route_telem_utm)),
                         crs=st_crs(route_telem_utm))
