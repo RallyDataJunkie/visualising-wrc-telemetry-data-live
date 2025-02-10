@@ -3,6 +3,8 @@ library(xml2)
 library(tidyr)
 library(sf)
 library(leaflet)
+library(trajr)
+# library(amt)
 
 download_kml <- function(kml_stub) {
     kml_url <- paste0("https://webapps2.wrc.com/2020/web/live/kml/", kml_stub, ".xml")
@@ -117,5 +119,73 @@ get_kml_geodf <- function(urlstub) {
     kml_sf <- st_zm(kml_sf, drop = TRUE, what = "ZM")
 
     kml_df <- as.data.frame(kml_sf)
-    return(list(kml_df = kml_df, geojson_file = geojson_file, kml_file = kml_file))
+    return(list(kml_sf = kml_sf, kml_df = kml_df, geojson_file = geojson_file, kml_file = kml_file))
+}
+
+# Detect the UTM zone as an EPSG code
+lonlat2UTMzone <- function(lonlat) {
+    utm <- (floor((lonlat[1] + 180) / 6) %% 60) + 1
+    if (lonlat[2] > 0) {
+        utm + 32600
+    } else {
+        utm + 32700
+    }
+}
+
+
+get_trj <- function(route) {
+    TrajFromCoords(as.data.frame(st_coordinates(route$geometry)))
+}
+
+compass_relative_turn <- function(route, angle = 0) {
+    TrajMeanVectorOfTurningAngles(route, angle)
+}
+
+# to_amt_track = function(route){
+#  make_track(st_coordinates(route$geometry), X, Y)
+# }
+
+get_utm_projection <- function(routes) {
+    # Keep track of the original proj4 string
+    old_crs <- st_crs(routes[1, ])$proj4string
+
+    sample_location_x <- st_coordinates(st_centroid(routes[1, ]))[1]
+    sample_location_y <- st_coordinates(st_centroid(routes[1, ]))[2]
+
+    # Generate a new projection in the appropriate UTM zone
+    crs_zone <- lonlat2UTMzone(c(
+        sample_location_x,
+        sample_location_y
+    ))
+
+    new_proj4_string <- st_crs(crs_zone)$proj4string
+
+    # Transform the route to the UTM projection
+    utm_routes <- st_transform(routes, crs = new_proj4_string)
+    trjs <- apply(utm_routes, 1, get_trj)
+
+    # Add some bendiness stats
+    utm_routes["straightness"] <- unlist(lapply(trjs, TrajStraightness))
+    utm_routes["sinuosity"] <- unlist(lapply(trjs, TrajSinuosity2))
+    utm_routes["meanTurn"] <- unlist(lapply(
+        trjs,
+        TrajMeanVectorOfTurningAngles
+    ))
+    utm_routes["meanCompass"] <- unlist(lapply(
+        trjs,
+        compass_relative_turn
+    ))
+
+    # amt_tracks = apply(utm_routes, 1, to_amt_track)
+    # utm_routes['amt_sin'] = unlist(lapply(amt_tracks, amt::sinuosity))
+    # utm_routes['amt_str'] = unlist(lapply(amt_tracks, amt::straightness))
+    # utm_routes['amt_cumd'] = unlist(lapply(amt_tracks, amt::cum_dist))
+    # utm_routes['amt_totd'] = unlist(lapply(amt_tracks, amt::tot_dist))
+    # utm_routes['amt_int'] = unlist(lapply(amt_tracks, amt::intensity_use))
+
+
+    utm_routes
+    # Or should we returned a named list
+    # e.g. including the original projection?
+    # list(utm_routes = utm_routes, orig_crs=old_crs)
 }

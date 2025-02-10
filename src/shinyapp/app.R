@@ -4,6 +4,11 @@ library(jsonlite)
 library(tidyr)
 library(purrr)
 library(leaflet)
+library(ggplot2)
+library(ggrepel)
+library(trajr)
+library(rLFT)
+
 source("geotools.R")
 
 # TO DO
@@ -106,7 +111,8 @@ ui <- fluidPage(
         textOutput("event_surface"),
         textOutput("rally_id"),
         tableOutput("stage_table"),
-        leafletOutput("event_map")
+        leafletOutput("event_map"),
+        plotOutput("stage_geo")
       )
     )
   )
@@ -237,7 +243,21 @@ server <- function(input, output, session) {
     # Get the KML data using the urlstub
     kmlbits <- get_kml_geodf(urlstub)
     kml_df <- kmlbits$kml_df
+    # print(head(kml_df))
     kml_df
+  })
+
+  stage_map_sf <- reactive({
+    req(input$event_select, input$year_select)
+
+    # Get the urlstub from the event_info
+    urlstub <- filtered_event_info()$kmlmap
+
+    # Get the KML data using the urlstub
+    kmlbits <- get_kml_geodf(urlstub)
+    kml_sf <- kmlbits$kml_sf
+    # print(head(kml_df))
+    kml_sf
   })
 
   output$event_map <- renderLeaflet({
@@ -252,7 +272,110 @@ server <- function(input, output, session) {
       ) %>%
       addPolylines(color = "red", weight = 4)
   })
+
+
+  output$stage_geo <- renderPlot({
+    req(input$stage_select)
+    print(head(stages_info()))
+    lookup_val <- stages_info() %>%
+      filter(`start-time-control` == input$stage_select) %>%
+      pull(kmltrack)
+
+    print(paste("lookup_val", lookup_val))
+
+    # stage_route = stage_map_sf() %>% filter(name == lookup_val)
+    utm_routes <- get_utm_projection(stage_map_sf())
+
+    print("this is utm_routes")
+    print(head(utm_routes))
+
+    utm_stageroute <- utm_routes %>% filter(name == lookup_val)
+    # print(stage_map_sf())
+    # tmp = %>%
+    # filter(name == lookup_val)
+    # trj <- TrajFromCoords(as.data.frame(st_coordinates(stage_map_df[1,])))
+    # print(trj)
+    # %>% unlist()
+
+    trj <- TrajFromCoords(as.data.frame(st_coordinates(utm_stageroute)))
+    # print(st_coordinates(utm_routes[1,]))
+    # print(stage_map_df()[1,])
+    trj$distance <- Mod(trj$displacement)
+
+    # Find the distance of the just completed step
+    trj$distance2 <- c(0, TrajStepLengths(trj))
+
+    # Find the distance of the upcoming step
+    trj$predist <- c(TrajStepLengths(trj), 0)
+
+    # Find the accumulated distance at each step
+    trj$cum_dist <- cumsum(trj$distance)
+
+    # Step angle in radians relative to previous
+    trj$stepangle <- c(0, TrajAngles(trj, compass.direction = NULL) * 180 / pi, NA)
+
+    trj$cumstepangle <- cumsum(c(0, TrajAngles(trj, compass.direction = NULL) * 180 / pi, NA))
+    trj$stepheading <- c(TrajAngles(trj, compass.direction = 0) * 180 / pi, NA)
+
+
+
+    print("this is trj")
+    print(head(trj))
+
+
+    route_convexity <- bct(utm_stageroute,
+      # distance between measurements
+      step = 10,
+      window = 20, ridName = "name"
+    )
+    # trj
+
+    tight_corners <- route_convexity[abs(route_convexity$ConvexityIndex) > 0.45, ]
+
+    g_curvature <- ggplot() +
+      geom_sf(data = utm_stageroute) +
+      ggrepel::geom_text_repel(
+        data = tight_corners,
+        aes(
+          label = ConvexityIndex,
+          x = Midpoint_X, y = Midpoint_Y,
+          color = (ConvexityIndex > 0)
+        ),
+        size = 2,
+        nudge_x = 2000, nudge_y = 500
+      ) +
+      geom_point(
+        data = tight_corners,
+        aes(
+          x = Midpoint_X, y = Midpoint_Y,
+          color = (ConvexityIndex > 0)
+        ), shape = 1, size = 1
+      ) +
+      theme_classic()
+
+    tight_angle <- 45
+    g_trjtight <- ggplot(
+      data = trj,
+      aes(x = x, y = y), size = 0.5
+    ) +
+      geom_path(color = "grey") +
+      geom_point(
+        pch = 0, color = "blue",
+        data = trj[abs(trj$stepangle) > tight_angle, ]
+      ) +
+      geom_point(
+        data = trj[abs(trj$stepangle) <= tight_angle, ],
+        pch = 1, color = "red", size = 0.1
+      ) +
+      coord_sf() #+
+    # geom_point(aes(x=X, y=Y), size=1, col='black',
+    #           data=start_location(1))
+
+    # g_curvature
+    g_trjtight
+  })
 }
+
 
 # Run the app
 shinyApp(ui = ui, server = server)
