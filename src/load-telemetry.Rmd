@@ -48,7 +48,7 @@ source("resources/telemetry_tools.R")
 
 Whilst a rally is in progress, a limited amount of telemetry is available from the live mapping facility. This comes in the form of GPS location data for each vehicle at a low sample rate. This data can be collected and used in real time to give us a means of identifying approximately where on a stage a driver might have lost time compared to another driver. Essentially, we can use the data to create effective split points every 200m or so along a rally stage, rather than every 5km. In addition, we can use the data to identify whether a car has stopped on a road section, and for how long.
 
-Until the strat of the 2025 season, more detailed telemetry data could be found on the original WRC+ website several hours after a stage has run. This data was at a much higher sample rate and included speed, RPM, throttle and brake data. This allowed us to make basic comparisons of drivers' actual performance on a stage at the end of each day of running.
+Until the start of the 2025 season, more detailed telemetry data could be found on the original WRC+ website several hours after a stage has run. This data was at a much higher sample rate and included speed, RPM, throttle and brake data. This allowed us to make basic comparisons of drivers' actual performance on a stage at the end of each day of running.
 
 # Loading the Live Telemetry Route Data
 
