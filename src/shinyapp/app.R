@@ -228,13 +228,20 @@ server <- function(input, output, session) {
     stages_info()
   })
 
-  output$event_map <- renderLeaflet({
+  stage_map_df <- reactive({
+    req(input$event_select, input$year_select)
+
     # Get the urlstub from the event_info
     urlstub <- filtered_event_info()$kmlmap
 
     # Get the KML data using the urlstub
     kmlbits <- get_kml_geodf(urlstub)
     kml_df <- kmlbits$kml_df
+    kml_df
+  })
+
+  output$event_map <- renderLeaflet({
+    kml_df <- stage_map_df()
     stages_kml <- kml_df$geometry
 
     # Create and return the leaflet map of all stages
