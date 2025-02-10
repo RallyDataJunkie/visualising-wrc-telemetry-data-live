@@ -1,0 +1,30 @@
+---
+title: "webr elevatr"
+engine: knitr
+format: live-html
+resources:
+  - resources
+---
+
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+```{webr}
+source("resources/geotools.R")
+
+urlstub <- "montecarlo_2021"
+
+kmlbits <- get_kml_geodf(urlstub)
+kml_df <- kmlbits$kml_df
+stages_kml <- kml_df$geometry
+
+leaflet(stages_kml[1]) %>%
+  addProviderTiles("OpenTopoMap",
+    # Other themes include:
+    # Stamen.TonerLite, Stamen.Terrain, OpenStreetMap.Mapnik
+    # Stamen.TerrainBackground, OpenTopoMap
+    group = "OSM"
+  ) %>%
+  addPolylines(color = "red", weight = 4)
+
+```
