@@ -33,8 +33,7 @@ quarto render src/load_full_telemetry.Rmd --output-dir ../dist
 python3 -m http.server 8123 --directory ./dist
 
 
-python3 -m http.server 8124 --directory ./shinysite
 Shiny:
- R -e "shinylive::export('./src/shinyapp', './shinysite')"
+ R -e "shinylive::export('./src/shinyapp', './shinyappsite')"
 
- python3 -m http.server 8124 --directory ./shinysite
+ python3 -m http.server 8124 --directory ./shinyappsite
