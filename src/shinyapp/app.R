@@ -6,6 +6,7 @@ library(purrr)
 library(leaflet)
 library(ggplot2)
 library(ggrepel)
+library(ggpubr)
 library(trajr)
 library(rLFT)
 
@@ -58,6 +59,7 @@ load_stages_data <- function(event_id) {
   event_url <- paste0("https://webappsdata.wrc.com/srv/wrc/json/api/wrcsrv/byId?id=%22", event_id, "%22&maxdepth=2")
   # Read JSON data from URL
   json_data <- fromJSON(event_url)
+  print(event_url)
 
   # TO DO - using the event_id, we can look up eg
   # https://webappsdata.wrc.com/srv/wrc/json/api/wrcsrv/byId?id=%226ad7a7fa-da2c-43bb-93c5-da788d0ab7a5%22&maxdepth=2
@@ -65,12 +67,20 @@ load_stages_data <- function(event_id) {
   # name, location, distance, date, firstCar, kmltrack
   # print(json_data$`_dchildren`)
   df <- as_tibble(json_data$`_dchildren`)
-  df2 <- df %>%
-    unnest(`_meta`) %>%
-    select(-`_dchildren`) %>%
-    pivot_wider(names_from = n, values_from = v, names_repair = "unique")
+  print("okay to here")
+  # In advance of a rally, we don't have the dchildren stage info
+  # althiough in principle we can still have a go at stage route analysis
+  df2 <- if ("_meta" %in% names(df)) {
+    df %>%
+      unnest(`_meta`) %>%
+      select(-`_dchildren`) %>%
+      pivot_wider(names_from = n, values_from = v, names_repair = "unique")
+  } else {
+    df[0, ]
+  }
   # print(head(df2))
-  return(df2 %>% select(`start-time-control`, location, distance, date, firstCar, kmlfile, kmltrack))
+  print("still here")
+  return(df2 %>% select(any_of(c("start-time-control", "location", "distance", "date", "firstCar", "kmlfile", "kmltrack"))))
 }
 
 # UI definition
@@ -97,7 +107,11 @@ ui <- fluidPage(
       ),
       # Event selection - dynamically updated
       selectInput("stage_select",
-        "Select Stage:",
+        "Select Stage Info:",
+        choices = NULL
+      ),
+      selectInput("stage_geo_select",
+        "Select Stage Analysis:",
         choices = NULL
       )
     ),
@@ -179,16 +193,36 @@ server <- function(input, output, session) {
   })
 
   # Update stage dropdown based on selected year, category and event
+
+  # THe primary intention is to use the stage data,
+  # but this is not available in advance of a rally
+  # But we could pull it from the geojson?
   observe({
     req(input$year_select, input$category_select, input$event_select)
-
-    stages <- load_stages_data(filtered_event_info()$event_id) %>%
-      pull(`start-time-control`)
-
+    stages_df <- load_stages_data(filtered_event_info()$event_id)
+    print(names(stages_df))
+    stages <- if ("start-time-control" %in% names(stages_df)) {
+      print("yes")
+      stages_df %>%
+        pull("start-time-control")
+    } else {
+      print("no")
+      character(0)
+    }
+    print(stages)
     updateSelectInput(session, "stage_select",
       choices = stages
     )
   })
+
+  observe({
+    # TO DO geo
+    req(input$year_select, input$category_select, input$event_select)
+    updateSelectInput(session, "stage_geo_select",
+      choices = stage_map_sf() %>% pull("name")
+    )
+  })
+
 
   # Display selected event details
   output$event_name <- renderText({
@@ -270,13 +304,16 @@ server <- function(input, output, session) {
 
 
   output$stage_geo <- renderPlot({
-    req(input$stage_select)
-    print(head(stages_info()))
-    lookup_val <- stages_info() %>%
-      filter(`start-time-control` == input$stage_select) %>%
-      pull(kmltrack)
-
-    print(paste("lookup_val", lookup_val))
+    req(input$stage_geo_select)
+    # print(head(stages_info()))
+    # Lookupval was when we pulled on input$stage_select
+    # lookup_val <-  stages_info() %>%
+    # filter(`start-time-control` == input$stage_select) %>%
+    # pull(kmltrack)
+    # print(paste("lookup_val",lookup_val))
+    lookup_val <- input$stage_geo_select
+    print("this is stage_map_sf")
+    print(head(stage_map_sf()))
 
     # stage_route = stage_map_sf() %>% filter(name == lookup_val)
     utm_routes <- get_utm_projection(stage_map_sf())
@@ -349,6 +386,13 @@ server <- function(input, output, session) {
       theme_classic()
 
     tight_angle <- 45
+
+    coords <- st_coordinates(utm_stageroute$geometry)
+
+    # Get the first and last coordinates
+    start_point <- coords[1, ] # First coordinate
+    end_point <- coords[nrow(coords), ] # Last coordinate
+
     g_trjtight <- ggplot(
       data = trj,
       aes(x = x, y = y), size = 0.5
@@ -362,12 +406,35 @@ server <- function(input, output, session) {
         data = trj[abs(trj$stepangle) <= tight_angle, ],
         pch = 1, color = "red", size = 0.1
       ) +
-      coord_sf() #+
-    # geom_point(aes(x=X, y=Y), size=1, col='black',
-    #           data=start_location(1))
+      coord_sf() +
+      geom_point(aes(x = start_point[1], y = start_point[2]), size = 2, col = "forestgreen") +
+      geom_point(aes(x = end_point[1], y = end_point[2]), size = 2, col = "red")
+
 
     # g_curvature
-    g_trjtight
+    # g_trjtight
+    # segment_plot(route_convexity, 0, 1000)
+
+
+    segment_length <- 1000
+    step_length <- 10
+    kms <- floor(max(route_convexity$MidMeas) / segment_length)
+    print(kms)
+    print(head(route_convexity))
+    # Create a list to hold each plot as a separate item
+    segment_plots <- list()
+    # Iterate through each kilometer
+    for (i in 1:kms) {
+      # Add each plot to the plot list
+      segment_plots[[length(segment_plots) + 1]] <-
+        segment_multiplot(route_convexity, i, step_length, segment_length, final = (i == kms))
+    }
+    g_sections <- ggarrange(
+      plotlist = segment_plots,
+      ncol = 5, nrow = ceiling(kms / 4)
+    )
+
+    annotate_figure(g_sections, top = text_grob(paste0(lookup_val, ": (1 km sections)"), face = "bold", size = 14))
   })
 }
 

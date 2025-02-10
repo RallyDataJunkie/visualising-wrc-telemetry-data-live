@@ -189,3 +189,46 @@ get_utm_projection <- function(routes) {
     # e.g. including the original projection?
     # list(utm_routes = utm_routes, orig_crs=old_crs)
 }
+
+segment_plot <- function(route_convexity, start, end, title = "", fix_coords = TRUE) {
+    # Create the route distance filter limits
+    segment_filter <- route_convexity$MidMeas >= start &
+        route_convexity$MidMeas <= end
+
+    # Filter the route
+    route_segment <- route_convexity[segment_filter, ]
+
+    # Generate the stylised route plot
+    g <- ggplot(route_segment) +
+        geom_path(aes(x = Midpoint_X, y = Midpoint_Y)) +
+        geom_point(
+            data = head(route_convexity[segment_filter, ], n = 1),
+            aes(x = Midpoint_X, y = Midpoint_Y)
+        ) +
+        theme_void()
+
+    if (title != "") {
+        g <- g + ggtitle(title)
+    }
+
+    if (fix_coords) {
+        g <- g + coord_fixed()
+    }
+
+    g
+}
+
+
+# The final section goes to the end of the route
+segment_multiplot <- function(route_convexity, i, step_length, segment_length, final = FALSE) {
+    # Preface the start of the stage with a 20m lead
+    start_prefix <- 2 * step_length
+    start <- segment_length * (i - 1) - start_prefix
+    if (final) {
+        end <- Inf
+    } else {
+        end <- (segment_length * i)
+    }
+
+    segment_plot(route_convexity, start, end, i, fix_coords = TRUE)
+}
