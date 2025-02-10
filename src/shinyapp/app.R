@@ -46,10 +46,9 @@ load_event_data <- function() {
       event_surface = map_chr(`_dchildren__meta`, extract_meta_value, key = "info-surface"),
       kmlmap = map_chr(`_dchildren__meta`, extract_meta_value, key = "kmlfile"),
       time_zone = map_chr(`_dchildren__meta`, extract_meta_value, key = "time-zone"),
-      category = map_chr(`_dchildren__meta`, extract_meta_value, key = "category"),
-      rally_id = map_chr(`_dchildren__meta`, extract_meta_value, key = "Event")
+      category = map_chr(`_dchildren__meta`, extract_meta_value, key = "category")
     ) %>%
-    select(year, event_id, event_name, event_start, event_finish, event_surface, kmlmap, time_zone, category, rally_id)
+    select(year, event_id, event_name, event_start, event_finish, event_surface, kmlmap, time_zone, category)
 
   return(event_data)
 }
@@ -109,7 +108,6 @@ ui <- fluidPage(
         textOutput("event_name"),
         htmlOutput("event_dates"),
         textOutput("event_surface"),
-        textOutput("rally_id"),
         tableOutput("stage_table"),
         leafletOutput("event_map"),
         plotOutput("stage_geo")
@@ -226,9 +224,6 @@ server <- function(input, output, session) {
     paste("Surface:", filtered_event_info()$event_surface)
   })
 
-  output$rally_id <- renderText({
-    paste("rallyId:", filtered_event_info()$rally_id)
-  })
 
   output$stage_table <- renderTable({
     stages_info()
