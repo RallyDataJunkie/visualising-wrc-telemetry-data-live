@@ -64,7 +64,7 @@ jobs:
 
       - name: Build shinylive site
         run: |
-          R -e "shinylive::export('./src/shinyapp', './dist/shinyapp')"
+          R -e "shinylive::export('./src/shinyapp', './dist/shinyapp', template_params=c(title='wrcGeo'))"
       #    python -m pip install -r requirements_shiny.txt
       #    mkdir -p ./dist
       #    shinylive export src/shinyapp ./dist --full-shinylive
