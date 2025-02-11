@@ -375,11 +375,16 @@ server <- function(input, output, session) {
     # Use stages_kml[n] for a particular stage
     # leaflet(stages_kml) %>%
     # leaflet(kml_sf) %>%
+    coords <- st_coordinates(segment_sf) # Get coordinates of the line
+    start_coord <- coords[1, ] # First point
+    end_coord <- coords[nrow(coords), ]
     leaflet(segment_sf) %>%
       addProviderTiles("OpenTopoMap",
         group = "OSM"
       ) %>%
-      addPolylines(color = "red", weight = 4)
+      addPolylines(color = "red", weight = 4) %>%
+      addMarkers(lng = start_coord["X"], lat = start_coord["Y"], popup = paste0("Start: ", start_dist, "m into stage.")) %>%
+      addMarkers(lng = end_coord["X"], lat = end_coord["Y"], popup = paste0("End: ", end_dist, "m into stage."))
   })
 
   trj_info <- reactive({
