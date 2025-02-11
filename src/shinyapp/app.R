@@ -87,10 +87,10 @@ load_stages_data <- function(event_id) {
 
 # UI definition
 ui <- function(req) {
-  fluidPage(
+  page_sidebar(
+    theme = bslib::bs_theme(version = 5),
     titlePanel("WRC Event Viewer"),
-    sidebarLayout(
-      sidebarPanel(
+    sidebar = sidebar(
         # Year selection
         selectInput("year_select",
           "Select Year:",
@@ -148,7 +148,6 @@ ui <- function(req) {
         )
       )
     )
-  )
 }
 
 
@@ -525,12 +524,12 @@ server <- function(input, output, session) {
 
     # Iterate through each kilometer
     if (kms < 2) {
-      segment_plot2(route_convexity, 0, Inf, yrange = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)))
+      segment_plot2(route_convexity, 0, Inf, bar_range = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)))
     } else {
       for (i in 1:(kms)) {
         segment_plots2[[length(segment_plots2) + 1]] <-
           segment_multiplot2(route_convexity, i, step_length, segment_length,
-            yrange = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)), final = (i == kms),
+            bar_range = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)), final = (i == kms),
             typ = "convexity"
           )
       }

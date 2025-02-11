@@ -35,7 +35,9 @@ jobs:
       - name: Install R packages
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          r-version: '4.4.2'
           packages:
+            any::shiny
             any::knitr
             any::rmarkdown
             any::shinylive
@@ -50,6 +52,7 @@ jobs:
             any::ggpubr
             any::trajr
             any::rLFT
+            any::xml2
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 

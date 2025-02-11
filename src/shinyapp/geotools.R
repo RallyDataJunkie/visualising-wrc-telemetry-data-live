@@ -243,7 +243,7 @@ get_route_segment <- function(route, start, end) {
 }
 
 
-segment_plot2 <- function(route, start, end, yrange, title = "",
+segment_plot2 <- function(route, start, end, bar_range, title = "",
                           typ = "route", themevoid = TRUE) {
     # Get route segment
     route_segment <- get_route_segment(route, start, end)
@@ -269,7 +269,7 @@ segment_plot2 <- function(route, start, end, yrange, title = "",
             )
     }
 
-    g <- g + yrange
+    g <- g + bar_range
 
     if (title != "") {
         g <- g + ggtitle(title)
@@ -282,7 +282,7 @@ segment_plot2 <- function(route, start, end, yrange, title = "",
     g + coord_flip() + scale_y_reverse()
 }
 
-segment_multiplot2 <- function(route, i, step_length, segment_length, yrange, final = FALSE, typ = "route") {
+segment_multiplot2 <- function(route, i, step_length, segment_length, bar_range, final = FALSE, typ = "route") {
     start <- segment_length * (i - 1) - step_length
     if (final) {
         end <- Inf
@@ -290,5 +290,5 @@ segment_multiplot2 <- function(route, i, step_length, segment_length, yrange, fi
         end <- (segment_length * i)
     }
 
-    segment_plot2(route, start, end, yrange, i, typ)
+    segment_plot2(route, start, end, bar_range, i, typ)
 }
