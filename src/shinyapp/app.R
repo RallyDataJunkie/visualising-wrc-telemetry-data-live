@@ -15,10 +15,9 @@ library(xml2)
 # library(amt)
 source("geotools.R")
 
-# TO DO
-# THis looks interesting: https://shinystoreplus.obi.obianom.com/
-# - eg save map data etc to browser storage
-# - eg pick up vals from URL so we can share a view for a year/event/stage
+#enableBookmarking("url")
+
+
 
 # Function to extract a specific meta value
 extract_meta_value <- function(meta_list, key) {
@@ -87,71 +86,86 @@ load_stages_data <- function(event_id) {
 }
 
 # UI definition
-ui <- fluidPage(
-  titlePanel("WRC Event Viewer"),
-  sidebarLayout(
-    sidebarPanel(
-      # Year selection
-      selectInput("year_select",
-        "Select Year:",
-        choices = NULL
-      ),
+ui <- function(req) {
+  fluidPage(
+    titlePanel("WRC Event Viewer"),
+    sidebarLayout(
+      sidebarPanel(
+        # Year selection
+        selectInput("year_select",
+          "Select Year:",
+          choices = NULL
+        ),
 
-      # Category selection - dynamically updated
-      selectInput("category_select",
-        "Select Category:",
-        choices = NULL
-      ),
+        # Category selection - dynamically updated
+        selectInput("category_select",
+          "Select Category:",
+          choices = NULL
+        ),
 
-      # Event selection - dynamically updated
-      selectInput("event_select",
-        "Select Event:",
-        choices = NULL
+        # Event selection - dynamically updated
+        selectInput("event_select",
+          "Select Event:",
+          choices = NULL
+        ),
+        # Event selection - dynamically updated
+        selectInput("stage_select",
+          "Select Stage Info:",
+          choices = NULL
+        ),
+        selectInput("stage_geo_select",
+          "Select Stage Analysis:",
+          choices = NULL
+        ),
+        #bookmarkButton(),
+        #textAreaInput("bookmark_url", "Generated URL", "", rows = 2)
       ),
-      # Event selection - dynamically updated
-      selectInput("stage_select",
-        "Select Stage Info:",
-        choices = NULL
-      ),
-      selectInput("stage_geo_select",
-        "Select Stage Analysis:",
-        choices = NULL
-      )
-    ),
-    navset_card_underline(
-      # Output panel for event details
-      nav_panel(
-        "Event Overview",
-        textOutput("event_name"),
-        htmlOutput("event_dates"),
-        textOutput("event_surface"),
-        leafletOutput("event_map"),
-      ),
-      nav_panel("Stage info", tableOutput("stage_table"), ),
-      nav_panel(
-        "Stage Map",
-        leafletOutput("stage_map"),
-      ),
-      nav_panel(
-        "Stage curvature",
-        plotOutput("stage_curvature")
-      ),
-      nav_panel(
-        "km sections (route)",
-        plotOutput("stage_geo")
-      ),
-      nav_panel(
-        "km sections (curvature)",
-        plotOutput("stage_geo_curvature")
+      navset_card_underline(
+        # Output panel for event details
+        nav_panel(
+          "Event Overview",
+          textOutput("event_name"),
+          htmlOutput("event_dates"),
+          textOutput("event_surface"),
+          leafletOutput("event_map"),
+        ),
+        nav_panel("Stage info", tableOutput("stage_table"), ),
+        nav_panel(
+          "Stage Map",
+          leafletOutput("stage_map"),
+        ),
+        nav_panel(
+          "Stage curvature",
+          plotOutput("stage_curvature")
+        ),
+        nav_panel(
+          "km sections (route)",
+          plotOutput("stage_geo")
+        ),
+        nav_panel(
+          "km sections (curvature)",
+          plotOutput("stage_geo_curvature")
+        )
       )
     )
   )
-)
+}
 
 
 # Server logic
 server <- function(input, output, session) {
   shinyOptions(cache = cachem::cache_disk("./image-cache"))
+  #setBookmarkExclude(c("bookmark_url", "event_map_bounds", "event_map_center", "event_map_zoom", "event_map_groups"))
+  # observe({
+  # Trigger this observer every time an input changes
+  #  reactiveValuesToList(input)
+  #  session$doBookmark()
+  # })
+
+  # Hacky bookmark display; the url is not updated in webR?
+  #onBookmarked(function(url) {
+  #  updateTextInput(session, "bookmark_url", value = sub("^.*/", "", url))
+  #})
 
   # Load data when app starts
   event_data <- reactive({
@@ -214,7 +228,7 @@ server <- function(input, output, session) {
 
   # Update stage dropdown based on selected year, category and event
 
-  # THe primary intention is to use the stage data,
+  # The primary intention is to use the stage data,
   # but this is not available in advance of a rally
   # But we could pull it from the geojson?
   observe({
