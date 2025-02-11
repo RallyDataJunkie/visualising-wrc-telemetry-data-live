@@ -38,6 +38,7 @@ jobs:
           packages:
             any::knitr
             any::rmarkdown
+            any::shinylive
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
@@ -50,8 +51,9 @@ jobs:
           quarto render src/load-telemetry.Rmd --output-dir ../dist
 
 
-      #- name: Build shinylive site
-      #  run: |
+      - name: Build shinylive site
+        run: |
+          R -e "shinylive::export('./src/shinyapp', './dist/shinyapp')"
       #    python -m pip install -r requirements_shiny.txt
       #    mkdir -p ./dist
       #    shinylive export src/shinyapp ./dist --full-shinylive
