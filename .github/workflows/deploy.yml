@@ -46,7 +46,6 @@ jobs:
             any::tidyr
             any::purrr
             any::leaflet
-            any::ggplot2)
             any::ggrepel
             any::ggpubr
             any::trajr
