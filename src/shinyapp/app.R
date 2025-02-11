@@ -163,6 +163,7 @@ server <- function(input, output, session) {
   # })
 
   # Hacky bookmark display; the url is not updated in webR?
+  # session$clientData$url_protocol, "//", session$clientData$url_hostname, session$clientData$url_pathname, "?", session$clientData$url_search
   #onBookmarked(function(url) {
   #  updateTextInput(session, "bookmark_url", value = sub("^.*/", "", url))
   #})
