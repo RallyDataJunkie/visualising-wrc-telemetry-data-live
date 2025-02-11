@@ -151,6 +151,8 @@ ui <- fluidPage(
 
 # Server logic
 server <- function(input, output, session) {
+  shinyOptions(cache = cachem::cache_disk("./image-cache"))
+
   # Load data when app starts
   event_data <- reactive({
     load_event_data()
@@ -410,7 +412,7 @@ server <- function(input, output, session) {
     g_curvature
   })
 
-  output$stage_curvature <- renderPlot({
+  output$stage_curvature <- renderCachedPlot({
     req(input$stage_geo_select)
     lookup_val <- input$stage_geo_select
     utm_routes <- utm_routes_projection()
@@ -440,6 +442,8 @@ server <- function(input, output, session) {
       geom_point(aes(x = start_point[1], y = start_point[2]), size = 2, col = "forestgreen") +
       geom_point(aes(x = end_point[1], y = end_point[2]), size = 2, col = "red")
     g_trjtight
+  }, cacheKeyExpr = {
+    list("stage_curvature", input$stage_geo_select)
   })
 
   get_stageroute_utm <- reactive({
@@ -459,7 +463,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$stage_geo_curvature <- renderPlot({
+  output$stage_geo_curvature <- renderCachedPlot({
     req(input$stage_geo_select)
     # print(head(stages_info()))
     # Lookupval was when we pulled on input$stage_select
@@ -521,9 +525,11 @@ server <- function(input, output, session) {
         ncol = 5, nrow = ceiling(kms / 4)
       )
     }
+  }, cacheKeyExpr = {
+    list("stage_geo_curvature", input$stage_geo_select)
   })
 
-  output$stage_geo <- renderPlot({
+  output$stage_geo <- renderCachedPlot({
     req(input$stage_geo_select)
     lookup_val <- input$stage_geo_select
     route_convexity <- route_convexity_mapping()
@@ -551,7 +557,9 @@ server <- function(input, output, session) {
 
       annotate_figure(g_sections, left = text_grob("    ", size = 24), top = text_grob(paste0(lookup_val, ": (1 km sections)"), face = "bold", size = 14))
     }
-  })
+  }, cacheKeyExpr = {
+    list("plot_stage_geo", input$stage_geo_select)
+  }) # %>% bindCache(input$stage_geo_select)
 }
 
 
