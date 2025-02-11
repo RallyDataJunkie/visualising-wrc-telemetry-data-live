@@ -88,7 +88,7 @@ load_stages_data <- function(event_id) {
 ui <- function(req) {
   page_sidebar(
     theme = bslib::bs_theme(version = 5),
-    titlePanel("WRC Event Viewer"),
+    titlePanel("WRC Stage Viewer"),
     sidebar = sidebar(
       # Year selection
       selectInput("year_select",
@@ -108,17 +108,17 @@ ui <- function(req) {
         choices = NULL
       ),
       # Event selection - dynamically updated
-      selectInput("stage_select",
-        "Select Stage Info:",
-        choices = NULL
-      ),
+      # selectInput("stage_select",
+      #  "Select Stage Info:",
+      #  choices = NULL
+      # ),
       selectInput("stage_geo_select",
         "Select Stage Analysis:",
         choices = NULL
       ),
       sliderInput(
         "stage_range",
-        "Stage Range:",
+        "Stage Map Range:",
         min = 0,
         max = 1,
         value = c(0, 1)
@@ -237,24 +237,23 @@ server <- function(input, output, session) {
   # The primary intention is to use the stage data,
   # but this is not available in advance of a rally
   # But we could pull it from the geojson?
-  observe({
-    req(input$year_select, input$category_select, input$event_select)
-    stages_df <- load_stages_data(filtered_event_info()$event_id)
-    # print(names(stages_df))
-    stages <- if ("start-time-control" %in% names(stages_df)) {
-      stages_df %>%
-        pull("start-time-control")
-    } else {
-      character(0)
-    }
-    # print(stages)
-    updateSelectInput(session, "stage_select",
-      choices = stages
-    )
-  })
+  # observe({
+  #  req(input$year_select, input$category_select, input$event_select)
+  #  stages_df <- load_stages_data(filtered_event_info()$event_id)
+  # print(names(stages_df))
+  #  stages <- if ("start-time-control" %in% names(stages_df)) {
+  #    stages_df %>%
+  #      pull("start-time-control")
+  #  } else {
+  #    character(0)
+  #  }
+  # print(stages)
+  # updateSelectInput(session, "stage_select",
+  #   choices = stages
+  # )
+  # })
 
   observe({
-    # TO DO geo
     req(input$year_select, input$category_select, input$event_select)
     updateSelectInput(session, "stage_geo_select",
       choices = stage_map_sf() %>% pull("name")
@@ -265,10 +264,12 @@ server <- function(input, output, session) {
     req(input$year_select, input$category_select, input$event_select, input$stage_geo_select)
     lookup_val <- input$stage_geo_select
     stage_length <- st_length(stage_map_sf() %>% filter(name == lookup_val))
-    stage_length <- ceiling(as.numeric(stage_length) / 1000) * 1000
+    stage_length <- as.integer(as.numeric(stage_length))
+    # Or round up to next thousand # ceiling(as.numeric(stage_length) / 1000) * 1000
     # print(stage_length)
     updateSliderInput(session, "stage_range",
-      min = 0, max = stage_length, value = c(0, stage_length)
+      min = 0, max = stage_length, value = c(0, stage_length),
+      step = 100
     )
   })
 
@@ -352,17 +353,29 @@ server <- function(input, output, session) {
 
 
   output$stage_map <- renderLeaflet({
-    req(input$stage_geo_select)
+    req(input$stage_geo_select, input$stage_range)
     lookup_val <- input$stage_geo_select
     # print("CHECK")
     # print(head(stage_map_df()))
     # print(input$stage_select)
-    kml_df <- stage_map_df() %>% filter(name == lookup_val)
-    stages_kml <- kml_df$geometry
+    # kml_df <- stage_map_df() %>% filter(name == lookup_val)
+    # stages_kml <- kml_df$geometry
+    kml_sf <- stage_map_sf() %>% filter(name == lookup_val)
+    # Get route length
+    # stage_length <- as.integer(as.numeric(st_length(kml_sf)))
+    stage_range <- input$stage_range
+    start_dist <- stage_range[1] # / stage_length
+    end_dist <- stage_range[2] # / stage_length
+    # segment <- lwgeom::st_linesubstring(kml_sf$geometry, start_dist, end_dist)
+    # segment_sf <- st_sf(geometry = segment)
+    # segment_sf = extract_sf_route_segment(kml_sf, start_dist, end_dist)
 
+    segment_sf <- extract_sf_route_segment(kml_sf, start_dist, end_dist)
     # Create and return the leaflet map of all stages
     # Use stages_kml[n] for a particular stage
-    leaflet(stages_kml) %>%
+    # leaflet(stages_kml) %>%
+    # leaflet(kml_sf) %>%
+    leaflet(segment_sf) %>%
       addProviderTiles("OpenTopoMap",
         group = "OSM"
       ) %>%

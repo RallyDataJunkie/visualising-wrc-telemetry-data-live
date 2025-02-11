@@ -4,6 +4,7 @@ library(tidyr)
 library(sf)
 library(leaflet)
 library(trajr)
+library(units)
 # library(amt)
 
 download_kml <- function(kml_stub) {
@@ -291,4 +292,131 @@ segment_multiplot2 <- function(route, i, step_length, segment_length, bar_range,
     }
 
     segment_plot2(route, start, end, bar_range, i, typ)
+}
+
+
+
+extract_sf_route_segment <- function(route, start_dist, end_dist, debug = FALSE) {
+    # From claude - we should pass in utm?
+    # Handle input from sf dataframe
+    if (inherits(route, "sf") && nrow(route) == 1) {
+        route_geom <- st_geometry(route)[[1]]
+        if (!inherits(route_geom, "sf")) {
+            route <- st_sf(geometry = st_sfc(route_geom, crs = st_crs(route)))
+        }
+    }
+
+    if (!inherits(route, "sf") || sf::st_geometry_type(route) != "LINESTRING") {
+        stop("Input must be an sf object with LINESTRING geometry")
+    }
+
+    # Transform to a suitable local UTM projection
+    # Get center point to determine UTM zone
+    center_point <- st_coordinates(st_centroid(route))
+    utm_zone <- floor((center_point[1] + 180) / 6) + 1
+    epsg_code <- 32600 + utm_zone # Northern hemisphere
+    if (center_point[2] < 0) {
+        epsg_code <- 32700 + utm_zone # Southern hemisphere
+    }
+
+    if (debug) {
+        print(paste("Original CRS:", st_crs(route)$input))
+        print(paste("Converting to UTM zone:", utm_zone, "EPSG:", epsg_code))
+    }
+
+    # Transform to UTM
+    route_utm <- st_transform(route, epsg_code)
+
+    # Get total length in meters
+    total_length <- set_units(as.numeric(sf::st_length(route_utm)), "m")
+
+    if (debug) {
+        print(paste("Total route length:", format(total_length)))
+    }
+
+    # Convert input distances to meters if they aren't already units objects
+    if (!inherits(start_dist, "units")) {
+        start_dist <- set_units(start_dist, "m")
+    }
+    if (!inherits(end_dist, "units")) {
+        end_dist <- set_units(end_dist, "m")
+    }
+
+    # Validate distances
+    if (start_dist < set_units(0, "m")) {
+        stop("Start distance must be >= 0 meters")
+    }
+    if (end_dist > total_length) {
+        stop(paste(
+            "End distance", format(end_dist),
+            "exceeds route length of", format(total_length)
+        ))
+    }
+    if (start_dist >= end_dist) {
+        stop("Start distance must be less than end distance")
+    }
+
+    # Get coordinates in UTM
+    coords <- sf::st_coordinates(route_utm)[, 1:2]
+
+    # Calculate cumulative distances
+    point_dists <- sqrt(diff(coords[, 1])^2 + diff(coords[, 2])^2)
+    dists <- c(0, cumsum(point_dists))
+    dists <- set_units(dists, "m")
+
+    if (debug) {
+        print("First few distance checkpoints along route:")
+        print(format(head(dists, 10)))
+    }
+
+    # Find valid indices
+    valid_start_points <- which(!is.na(dists) & dists <= start_dist)
+    valid_end_points <- which(!is.na(dists) & dists >= end_dist)
+
+    if (length(valid_start_points) == 0) {
+        stop(paste("No valid points found before start distance", format(start_dist)))
+    }
+    if (length(valid_end_points) == 0) {
+        stop(paste("No valid points found after end distance", format(end_dist)))
+    }
+
+    start_idx <- max(valid_start_points)
+    end_idx <- min(valid_end_points)
+
+    if (debug) {
+        print(paste("Start index:", start_idx, "End index:", end_idx))
+        print(paste("Start point distance:", format(dists[start_idx])))
+        print(paste("End point distance:", format(dists[end_idx])))
+    }
+
+    # Calculate interpolation points
+    if (dists[start_idx] < start_dist) {
+        prop <- as.numeric((start_dist - dists[start_idx]) / (dists[start_idx + 1] - dists[start_idx]))
+        start_point <- coords[start_idx, ] + prop * (coords[start_idx + 1, ] - coords[start_idx, ])
+    } else {
+        start_point <- coords[start_idx, ]
+    }
+
+    if (dists[end_idx] > end_dist) {
+        prop <- as.numeric((end_dist - dists[end_idx - 1]) / (dists[end_idx] - dists[end_idx - 1]))
+        end_point <- coords[end_idx - 1, ] + prop * (coords[end_idx, ] - coords[end_idx - 1, ])
+    } else {
+        end_point <- coords[end_idx, ]
+    }
+
+    new_coords <- rbind(
+        start_point,
+        coords[(start_idx + 1):(end_idx - 1), , drop = FALSE],
+        end_point
+    )
+
+    # Create segment in UTM coordinates
+    segment_utm <- sf::st_linestring(new_coords) %>%
+        sf::st_sfc(crs = epsg_code) %>%
+        sf::st_sf()
+
+    # Transform back to original CRS
+    segment <- st_transform(segment_utm, st_crs(route))
+
+    return(segment)
 }
