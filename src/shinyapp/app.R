@@ -1,4 +1,5 @@
 library(shiny)
+library(bslib)
 library(dplyr)
 library(jsonlite)
 library(tidyr)
@@ -9,7 +10,6 @@ library(ggrepel)
 library(ggpubr)
 library(trajr)
 library(rLFT)
-
 source("geotools.R")
 
 # TO DO
@@ -69,7 +69,7 @@ load_stages_data <- function(event_id) {
   df <- as_tibble(json_data$`_dchildren`)
   print("okay to here")
   # In advance of a rally, we don't have the dchildren stage info
-  # althiough in principle we can still have a go at stage route analysis
+  # although in principle we can still have a go at stage route analysis
   df2 <- if ("_meta" %in% names(df)) {
     df %>%
       unnest(`_meta`) %>%
@@ -115,16 +115,31 @@ ui <- fluidPage(
         choices = NULL
       )
     ),
-    mainPanel(
+    navset_card_underline(
       # Output panel for event details
-      wellPanel(
-        h3("Event Details"),
+      nav_panel(
+        "Event Overview",
         textOutput("event_name"),
         htmlOutput("event_dates"),
         textOutput("event_surface"),
-        tableOutput("stage_table"),
         leafletOutput("event_map"),
+      ),
+      nav_panel("Stage info", tableOutput("stage_table"), ),
+      nav_panel(
+        "Stage Map",
+        leafletOutput("stage_map"),
+      ),
+      nav_panel(
+        "Stage curvature",
+        plotOutput("stage_curvature")
+      ),
+      nav_panel(
+        "km sections (route)",
         plotOutput("stage_geo")
+      ),
+      nav_panel(
+        "km sections (curvature)",
+        plotOutput("stage_geo_curvature")
       )
     )
   )
@@ -303,32 +318,29 @@ server <- function(input, output, session) {
   })
 
 
-  output$stage_geo <- renderPlot({
+  output$stage_map <- renderLeaflet({
     req(input$stage_geo_select)
-    # print(head(stages_info()))
-    # Lookupval was when we pulled on input$stage_select
-    # lookup_val <-  stages_info() %>%
-    # filter(`start-time-control` == input$stage_select) %>%
-    # pull(kmltrack)
-    # print(paste("lookup_val",lookup_val))
     lookup_val <- input$stage_geo_select
-    print("this is stage_map_sf")
-    print(head(stage_map_sf()))
+    # print("CHECK")
+    # print(head(stage_map_df()))
+    # print(input$stage_select)
+    kml_df <- stage_map_df() %>% filter(name == lookup_val)
+    stages_kml <- kml_df$geometry
 
-    # stage_route = stage_map_sf() %>% filter(name == lookup_val)
-    utm_routes <- get_utm_projection(stage_map_sf())
+    # Create and return the leaflet map of all stages
+    # Use stages_kml[n] for a particular stage
+    leaflet(stages_kml) %>%
+      addProviderTiles("OpenTopoMap",
+        group = "OSM"
+      ) %>%
+      addPolylines(color = "red", weight = 4)
+  })
 
-    print("this is utm_routes")
-    print(head(utm_routes))
-
+  trj_info <- reactive({
+    req(input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    utm_routes <- utm_routes_projection()
     utm_stageroute <- utm_routes %>% filter(name == lookup_val)
-    # print(stage_map_sf())
-    # tmp = %>%
-    # filter(name == lookup_val)
-    # trj <- TrajFromCoords(as.data.frame(st_coordinates(stage_map_df[1,])))
-    # print(trj)
-    # %>% unlist()
-
     trj <- TrajFromCoords(as.data.frame(st_coordinates(utm_stageroute)))
     # print(st_coordinates(utm_routes[1,]))
     # print(stage_map_df()[1,])
@@ -348,19 +360,26 @@ server <- function(input, output, session) {
 
     trj$cumstepangle <- cumsum(c(0, TrajAngles(trj, compass.direction = NULL) * 180 / pi, NA))
     trj$stepheading <- c(TrajAngles(trj, compass.direction = 0) * 180 / pi, NA)
+    trj
+  })
 
+  utm_routes_projection <- reactive({
+    req(input$stage_geo_select)
+    get_utm_projection(stage_map_sf())
+  })
 
+  output$stage_curvature2 <- renderPlot({
+    # req(input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    utm_routes <- utm_routes_projection()
 
-    print("this is trj")
-    print(head(trj))
-
+    utm_stageroute <- utm_routes %>% filter(name == lookup_val)
 
     route_convexity <- bct(utm_stageroute,
       # distance between measurements
       step = 10,
       window = 20, ridName = "name"
     )
-    # trj
 
     tight_corners <- route_convexity[abs(route_convexity$ConvexityIndex) > 0.45, ]
 
@@ -385,8 +404,16 @@ server <- function(input, output, session) {
       ) +
       theme_classic()
 
-    tight_angle <- 45
+    g_curvature
+  })
 
+  output$stage_curvature <- renderPlot({
+    req(input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    utm_routes <- utm_routes_projection()
+    utm_stageroute <- utm_routes %>% filter(name == lookup_val)
+    trj <- trj_info()
+    tight_angle <- 45
     coords <- st_coordinates(utm_stageroute$geometry)
 
     # Get the first and last coordinates
@@ -409,32 +436,118 @@ server <- function(input, output, session) {
       coord_sf() +
       geom_point(aes(x = start_point[1], y = start_point[2]), size = 2, col = "forestgreen") +
       geom_point(aes(x = end_point[1], y = end_point[2]), size = 2, col = "red")
+    g_trjtight
+  })
 
+  get_stageroute_utm <- reactive({
+    req(input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    utm_routes <- utm_routes_projection()
+    utm_stageroute <- utm_routes %>% filter(name == lookup_val)
+  })
+
+  route_convexity_mapping <- reactive({
+    req(input$stage_geo_select)
+    utm_stageroute <- get_stageroute_utm()
+    bct(utm_stageroute,
+      # distance between measurements
+      step = 10,
+      window = 20, ridName = "name"
+    )
+  })
+
+  output$stage_geo_curvature <- renderPlot({
+    req(input$stage_geo_select)
+    # print(head(stages_info()))
+    # Lookupval was when we pulled on input$stage_select
+    # lookup_val <-  stages_info() %>%
+    # filter(`start-time-control` == input$stage_select) %>%
+    # pull(kmltrack)
+    # print(paste("lookup_val",lookup_val))
+    lookup_val <- input$stage_geo_select
+    # print("this is stage_map_sf")
+    # print(head(stage_map_sf()))
+
+    # stage_route = stage_map_sf() %>% filter(name == lookup_val)
+    utm_routes <- utm_routes_projection()
+
+    # print("this is utm_routes")
+    # print(head(utm_routes))
+
+    utm_stageroute <- utm_routes %>% filter(name == lookup_val)
+    # print(stage_map_sf())
+    # tmp = %>%
+    # filter(name == lookup_val)
+    # trj <- TrajFromCoords(as.data.frame(st_coordinates(stage_map_df[1,])))
+    # print(trj)
+    # %>% unlist()
+
+    trj <- trj_info()
+
+    # print("this is trj")
+    # print(head(trj))
+    route_convexity <- route_convexity_mapping()
+
+    # trj
 
     # g_curvature
     # g_trjtight
     # segment_plot(route_convexity, 0, 1000)
 
-
     segment_length <- 1000
     step_length <- 10
     kms <- floor(max(route_convexity$MidMeas) / segment_length)
-    print(kms)
-    print(head(route_convexity))
+    # print(kms)
+
+    segment_plots2 <- list()
+
+    # Iterate through each kilometer
+    if (kms < 2) {
+      segment_plot2(route_convexity, 0, Inf, yrange = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)))
+    } else {
+      for (i in 1:(kms)) {
+        segment_plots2[[length(segment_plots2) + 1]] <-
+          segment_multiplot2(route_convexity, i, step_length, segment_length,
+            yrange = ylim(min(route_convexity$ConvexityIndex), max(route_convexity$ConvexityIndex)), final = (i == kms),
+            typ = "convexity"
+          )
+      }
+
+      ggarrange(
+        plotlist = segment_plots2,
+        ncol = 5, nrow = ceiling(kms / 4)
+      )
+    }
+  })
+
+  output$stage_geo <- renderPlot({
+    req(input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    route_convexity <- route_convexity_mapping()
+    segment_length <- 1000
+    step_length <- 10
+    kms <- floor(max(route_convexity$MidMeas) / segment_length)
+    # print(kms)
+    # print(head(route_convexity))
     # Create a list to hold each plot as a separate item
     segment_plots <- list()
-    # Iterate through each kilometer
-    for (i in 1:kms) {
-      # Add each plot to the plot list
-      segment_plots[[length(segment_plots) + 1]] <-
-        segment_multiplot(route_convexity, i, step_length, segment_length, final = (i == kms))
-    }
-    g_sections <- ggarrange(
-      plotlist = segment_plots,
-      ncol = 5, nrow = ceiling(kms / 4)
-    )
+    if (kms < 2) {
+      segment_plot(route_convexity, 0, Inf)
+    } else {
+      # Iterate through each kilometer
+      for (i in 1:kms) {
+        # Add each plot to the plot list
+        segment_plots[[length(segment_plots) + 1]] <-
+          segment_multiplot(route_convexity, i, step_length, segment_length, final = (i == kms))
+      }
 
-    annotate_figure(g_sections, top = text_grob(paste0(lookup_val, ": (1 km sections)"), face = "bold", size = 14))
+      g_sections <- ggarrange(
+        plotlist = segment_plots,
+        ncol = 5, nrow = ceiling(kms / 4)
+      )
+
+      annotate_figure(g_sections, left = text_grob("    ", size = 24), top = text_grob(paste0(lookup_val, ": (1 km sections)"), face = "bold", size = 14))
+    }
   })
 }
 

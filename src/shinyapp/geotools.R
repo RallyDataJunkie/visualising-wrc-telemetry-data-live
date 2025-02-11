@@ -232,3 +232,63 @@ segment_multiplot <- function(route_convexity, i, step_length, segment_length, f
 
     segment_plot(route_convexity, start, end, i, fix_coords = TRUE)
 }
+
+
+# Simple function to get a route segment
+get_route_segment <- function(route, start, end) {
+    segment_filter <- route$MidMeas >= start &
+        route$MidMeas <= end
+
+    route[segment_filter, ]
+}
+
+
+segment_plot2 <- function(route, start, end, yrange, title = "",
+                          typ = "route", themevoid = TRUE) {
+    # Get route segment
+    route_segment <- get_route_segment(route, start, end)
+
+    # Create plot base
+    g <- ggplot(route_segment)
+
+    if (typ == "convexity") {
+        g <- g + geom_bar(
+            aes(
+                x = MidMeas,
+                y = -ConvexityIndex,
+                col = (ConvexityIndex > 0)
+            ),
+            stat = "identity", show.legend = FALSE
+        )
+    } else {
+        # plot route
+        g <- g + geom_path(aes(x = Midpoint_X, y = Midpoint_Y)) +
+            geom_point(
+                data = head(route_segment, n = 1),
+                aes(x = Midpoint_X, y = Midpoint_Y)
+            )
+    }
+
+    g <- g + yrange
+
+    if (title != "") {
+        g <- g + ggtitle(title)
+    }
+
+    if (themevoid) {
+        g <- g + theme_void()
+    }
+
+    g + coord_flip() + scale_y_reverse()
+}
+
+segment_multiplot2 <- function(route, i, step_length, segment_length, yrange, final = FALSE, typ = "route") {
+    start <- segment_length * (i - 1) - step_length
+    if (final) {
+        end <- Inf
+    } else {
+        end <- (segment_length * i)
+    }
+
+    segment_plot2(route, start, end, yrange, i, typ)
+}
