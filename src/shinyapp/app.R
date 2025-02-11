@@ -15,7 +15,7 @@ library(xml2)
 # library(amt)
 source("geotools.R")
 
-#enableBookmarking("url")
+# enableBookmarking("url")
 
 
 
@@ -61,7 +61,7 @@ load_stages_data <- function(event_id) {
   event_url <- paste0("https://webappsdata.wrc.com/srv/wrc/json/api/wrcsrv/byId?id=%22", event_id, "%22&maxdepth=2")
   # Read JSON data from URL
   json_data <- fromJSON(event_url)
-  print(event_url)
+  # print(event_url)
 
   # TO DO - using the event_id, we can look up eg
   # https://webappsdata.wrc.com/srv/wrc/json/api/wrcsrv/byId?id=%226ad7a7fa-da2c-43bb-93c5-da788d0ab7a5%22&maxdepth=2
@@ -69,7 +69,7 @@ load_stages_data <- function(event_id) {
   # name, location, distance, date, firstCar, kmltrack
   # print(json_data$`_dchildren`)
   df <- as_tibble(json_data$`_dchildren`)
-  print("okay to here")
+
   # In advance of a rally, we don't have the dchildren stage info
   # although in principle we can still have a go at stage route analysis
   df2 <- if ("_meta" %in% names(df)) {
@@ -81,7 +81,6 @@ load_stages_data <- function(event_id) {
     df[0, ]
   }
   # print(head(df2))
-  print("still here")
   return(df2 %>% select(any_of(c("start-time-control", "location", "distance", "date", "firstCar", "kmlfile", "kmltrack"))))
 }
 
@@ -91,70 +90,77 @@ ui <- function(req) {
     theme = bslib::bs_theme(version = 5),
     titlePanel("WRC Event Viewer"),
     sidebar = sidebar(
-        # Year selection
-        selectInput("year_select",
-          "Select Year:",
-          choices = NULL
-        ),
-
-        # Category selection - dynamically updated
-        selectInput("category_select",
-          "Select Category:",
-          choices = NULL
-        ),
-
-        # Event selection - dynamically updated
-        selectInput("event_select",
-          "Select Event:",
-          choices = NULL
-        ),
-        # Event selection - dynamically updated
-        selectInput("stage_select",
-          "Select Stage Info:",
-          choices = NULL
-        ),
-        selectInput("stage_geo_select",
-          "Select Stage Analysis:",
-          choices = NULL
-        ),
-        #bookmarkButton(),
-        #textAreaInput("bookmark_url", "Generated URL", "", rows = 2)
+      # Year selection
+      selectInput("year_select",
+        "Select Year:",
+        choices = NULL
       ),
-      navset_card_underline(
-        # Output panel for event details
-        nav_panel(
-          "Event Overview",
-          textOutput("event_name"),
-          htmlOutput("event_dates"),
-          textOutput("event_surface"),
-          leafletOutput("event_map"),
-        ),
-        nav_panel("Stage info", tableOutput("stage_table"), ),
-        nav_panel(
-          "Stage Map",
-          leafletOutput("stage_map"),
-        ),
-        nav_panel(
-          "Stage curvature",
-          plotOutput("stage_curvature")
-        ),
-        nav_panel(
-          "km sections (route)",
-          plotOutput("stage_geo")
-        ),
-        nav_panel(
-          "km sections (curvature)",
-          plotOutput("stage_geo_curvature")
-        )
+
+      # Category selection - dynamically updated
+      selectInput("category_select",
+        "Select Category:",
+        choices = NULL
+      ),
+
+      # Event selection - dynamically updated
+      selectInput("event_select",
+        "Select Event:",
+        choices = NULL
+      ),
+      # Event selection - dynamically updated
+      selectInput("stage_select",
+        "Select Stage Info:",
+        choices = NULL
+      ),
+      selectInput("stage_geo_select",
+        "Select Stage Analysis:",
+        choices = NULL
+      ),
+      sliderInput(
+        "stage_range",
+        "Stage Range:",
+        min = 0,
+        max = 1,
+        value = c(0, 1)
+      ),
+      # bookmarkButton(),
+      # textAreaInput("bookmark_url", "Generated URL", "", rows = 2)
+    ),
+    navset_card_underline(
+      # Output panel for event details
+      nav_panel(
+        "Event Overview",
+        textOutput("event_name"),
+        htmlOutput("event_dates"),
+        textOutput("event_surface"),
+        leafletOutput("event_map"),
+      ),
+      nav_panel("Stage info", tableOutput("stage_table"), ),
+      nav_panel(
+        "Stage Map",
+        leafletOutput("stage_map"),
+      ),
+      nav_panel(
+        "Stage curvature",
+        plotOutput("stage_curvature")
+      ),
+      nav_panel(
+        "km sections (route)",
+        plotOutput("stage_geo")
+      ),
+      nav_panel(
+        "km sections (curvature)",
+        plotOutput("stage_geo_curvature")
       )
     )
+  )
 }
 
 
 # Server logic
 server <- function(input, output, session) {
   shinyOptions(cache = cachem::cache_disk("./image-cache"))
-  #setBookmarkExclude(c("bookmark_url", "event_map_bounds", "event_map_center", "event_map_zoom", "event_map_groups"))
+  # setBookmarkExclude(c("bookmark_url", "event_map_bounds", "event_map_center", "event_map_zoom", "event_map_groups"))
   # observe({
   # Trigger this observer every time an input changes
   #  reactiveValuesToList(input)
@@ -163,9 +169,9 @@ server <- function(input, output, session) {
 
   # Hacky bookmark display; the url is not updated in webR?
   # session$clientData$url_protocol, "//", session$clientData$url_hostname, session$clientData$url_pathname, "?", session$clientData$url_search
-  #onBookmarked(function(url) {
+  # onBookmarked(function(url) {
   #  updateTextInput(session, "bookmark_url", value = sub("^.*/", "", url))
-  #})
+  # })
 
   # Load data when app starts
   event_data <- reactive({
@@ -234,16 +240,14 @@ server <- function(input, output, session) {
   observe({
     req(input$year_select, input$category_select, input$event_select)
     stages_df <- load_stages_data(filtered_event_info()$event_id)
-    print(names(stages_df))
+    # print(names(stages_df))
     stages <- if ("start-time-control" %in% names(stages_df)) {
-      print("yes")
       stages_df %>%
         pull("start-time-control")
     } else {
-      print("no")
       character(0)
     }
-    print(stages)
+    # print(stages)
     updateSelectInput(session, "stage_select",
       choices = stages
     )
@@ -257,6 +261,16 @@ server <- function(input, output, session) {
     )
   })
 
+  observe({
+    req(input$year_select, input$category_select, input$event_select, input$stage_geo_select)
+    lookup_val <- input$stage_geo_select
+    stage_length <- st_length(stage_map_sf() %>% filter(name == lookup_val))
+    stage_length <- ceiling(as.numeric(stage_length) / 1000) * 1000
+    # print(stage_length)
+    updateSliderInput(session, "stage_range",
+      min = 0, max = stage_length, value = c(0, stage_length)
+    )
+  })
 
   # Display selected event details
   output$event_name <- renderText({
