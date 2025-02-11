@@ -39,6 +39,18 @@ jobs:
             any::knitr
             any::rmarkdown
             any::shinylive
+            any::ggplot2
+            any::bslib
+            any::dplyr
+            any::jsonlite
+            any::tidyr
+            any::purrr
+            any::leaflet
+            any::ggplot2)
+            any::ggrepel
+            any::ggpubr
+            any::trajr
+            any::rLFT
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
