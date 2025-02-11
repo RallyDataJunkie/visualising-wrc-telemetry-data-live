@@ -37,22 +37,22 @@ jobs:
         with:
           r-version: '4.4.2'
           packages:
-            any::shiny
-            any::knitr
-            any::rmarkdown
             any::shinylive
-            any::ggplot2
-            any::bslib
-            any::dplyr
-            any::jsonlite
-            any::tidyr
-            any::purrr
-            any::leaflet
-            any::ggrepel
-            any::ggpubr
-            any::trajr
-            any::rLFT
-            any::xml2
+            #any::knitr
+            #any::rmarkdown
+            #any::shiny
+            #any::ggplot2
+            #any::bslib
+            #any::dplyr
+            #any::jsonlite
+            #any::tidyr
+            #any::purrr
+            #any::leaflet
+            #any::ggrepel
+            #any::ggpubr
+            #any::trajr
+            #any::rLFT
+            #any::xml2
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
