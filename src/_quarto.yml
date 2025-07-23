@@ -1,0 +1,20 @@
+project:
+  type: book
+
+book:
+  title: "Visualising WRC Telemetry Data With webR"
+  subtitle: "A RallyDataJunkie Recipe Book"
+  author: "Tony Hirst"
+  description: "Analysing WRC telemetry data."
+  chapters:
+    - index.Rmd
+
+
+format:
+  html:
+    theme: cosmo
+    include-in-header: 
+      - text: |
+          <script data-goatcounter="https://rallydatajunkie.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+

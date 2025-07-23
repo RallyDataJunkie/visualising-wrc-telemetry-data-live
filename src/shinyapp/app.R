@@ -86,6 +86,9 @@ load_stages_data <- function(event_id) {
 
 # UI definition
 ui <- function(req) {
+
+  tags$script(src = "//gc.zgo.at/count.js", `data-goatcounter` = "https://rallydatajunkie.goatcounter.com/count", async = NA)
+
   page_sidebar(
     theme = bslib::bs_theme(version = 5),
     titlePanel("WRC Stage Viewer"),

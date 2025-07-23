@@ -1,24 +1,23 @@
----
-title: "Visualising WRC Telemetry Data With R"
-subtitle: "A RallyDataJunkie Recipe Book"
-author: "Tony Hirst"
-description: "Analysing WRC telemetry data."
-knit: "bookdown::render_book"
-site: bookdown::bookdown_site
-date: "Last generated on `r format(Sys.time(), '%d %B, %Y')`"
-always_allow_html: yes
-new_session: no
----
 # Preface {-}
 
-A recipe guide to visualising WRC car telemetry data using the *R* programming language.
+A recipe guide to visualising WRC car telemetry data using the *R* programming language and the `webR` runtime. `webR` allows R code to be executed *live* in the browser using the `webR` WASM environment.
 
-Based on analysis of telemetry data files downloaded from the WRC website.
+This book describes the visualisation and analysis of telemetry data files downloaded from the WRC website prior to the 2025 season.
+
+*This book is a work-in-progress and updates the an earlier work from 2022: [*Visualising WRC Telemetry Data With R*](https://rallydatajunkie.com/visualising-wrc-telemetry-data).
+
+*As of 2025, it seems as if meaningful telemetry data files are no longer available. Or if they are, they have a URL / require an API call I haven't discovered yet...*
 
 To discuss / critique / comment on these analyses, please use the [discussion forum](https://github.com/RallyDataJunkie/rallydatajunkie.github.io/discussions).
 
-For a guide to visualising stages, see [*Visualising WRC Rally Stages*](https://rallydatajunkie.com/visualising-rally-stages/).
+For my guide to visualising stages, see [*Visualising WRC Rally Stages*](https://rallydatajunkie.com/visualising-rally-stages/).
 
-For a guide to visualising rally timing and results data, see [*Visualising WRC Rally Results*](https://rallydatajunkie.com/visualising-wrc-rally-results).
+For my earlier guide to visualising rally timing and results data, see [*Visualising WRC Rally Results*](https://rallydatajunkie.com/visualising-wrc-rally-results).
+
+For my 2025 work-in-progress in-browser ShinyLive-python app for visualising WRC rally timing and results data, see [here](https://rallydatajunkie.com/wrc-shinylive/).
+
+For my 2025 work-in-progress in-browser ShinyLive-R app for visualising WRC rally stages, see [here](https://rallydatajunkie.com/visualising-wrc-telemetry-data-live/shinyapp/).
+
+For my 2025 notes on visulising Dakar Rally data using Python, see [Wrangling Dakar Rally Data](https://rallydatajunkie.com/wrangling_dakar_2025/book/00_preface.html), as well as the live JupyterLite coding environment used to support that text [here](https://rallydatajunkie.com/wrangling_dakar_2025). See also early prof of concept SHiny apps ([stage surface visualisation 1](https://rallydatajunkie.com/wrangling_dakar_2025/shinylive/app1/) and [stage surface visualisation 2](https://rallydatajunkie.com/wrangling_dakar_2025/shinylive/app2/)).
 
 *This report is unofficial and is not associated in any way with the Fédération Internationale de l’Automobile (FIA) or WRC Promoter GmbH.*

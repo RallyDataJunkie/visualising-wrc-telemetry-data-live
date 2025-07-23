@@ -56,14 +56,18 @@ jobs:
       - name: Quarto setup
         uses: quarto-dev/quarto-actions/setup@v2
 
-      #- name: Add Quarto extensions
-      #  run: |
-      #    quarto add r-wasm/quarto-live
+      - name: Add Quarto extensions
+        run: |
+          quarto add r-wasm/quarto-live
+
+      - name: Setup dist dir
+        run: |
+          mkdir -p ./dist
+          touch ./dist/.nojekyll
 
       - name: Render Quarto site
         run: |
-          quarto render src/load-telemetry.Rmd --output-dir ../dist
-
+          quarto render ./src --output-dir ../dist
 
       - name: Build shinylive site
         run: |

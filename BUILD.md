@@ -37,3 +37,4 @@ Shiny:
  R -e "shinylive::export('./src/shinyapp', './shinyappsite')"
 
  python3 -m http.server 8124 --directory ./shinyappsite
+
